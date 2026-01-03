@@ -29,7 +29,7 @@ DisableProgramGroupPage=yes
 ; Output
 OutputDir=output
 OutputBaseFilename=LiveIdolCloneInstaller_{#MyAppVersion}
-SetupIconFile=icon.ico
+; SetupIconFile=icon.ico
 
 ; Compression
 Compression=lzma2/max
@@ -100,10 +100,10 @@ Source: "..\backend\voice_profiles\default\README.md"; DestDir: "{app}\backend\v
 
 [Dirs]
 ; Create output directories
-DirName: "{app}\backend\output"; Permissions: users-full
-DirName: "{app}\backend\voice_profiles"; Permissions: users-full
-DirName: "{app}\logs"; Permissions: users-full
-DirName: "{app}\backend\renderer"; Permissions: users-full
+Name: "{app}\backend\output"; Permissions: users-full
+Name: "{app}\backend\voice_profiles"; Permissions: users-full
+Name: "{app}\logs"; Permissions: users-full
+Name: "{app}\backend\renderer"; Permissions: users-full
 
 [Icons]
 ; Start Menu
