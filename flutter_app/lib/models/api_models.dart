@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 /// Response model for /api/speak endpoint
 class SpeakResponse {
   final String? audioPath;
@@ -38,11 +36,7 @@ class HealthResponse {
   final bool ttsReady;
   final String? device;
 
-  HealthResponse({
-    required this.status,
-    required this.ttsReady,
-    this.device,
-  });
+  HealthResponse({required this.status, required this.ttsReady, this.device});
 
   factory HealthResponse.fromJson(Map<String, dynamic> json) {
     return HealthResponse(
