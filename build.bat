@@ -240,7 +240,7 @@ echo [3/5] Building Flutter App
 echo ==========================================
 echo.
 
-if %FRONTEND_MODE% EQU portable (
+if "%FRONTEND_MODE%" EQU "portable" (
     echo Flutter not found in system. Checking portable Flutter...
     if not exist "%PORTABLE_DIR%\flutter\bin\flutter.bat" (
         echo Downloading Flutter SDK (~900MB)...
