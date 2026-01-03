@@ -111,18 +111,29 @@ if "%BUILD_MODE%"=="traditional" (
     
 ) else (
     REM Portable mode - download Python
-    if not exist "%PORTABLE_DIR%\python" (
-        echo Downloading portable Python...
+    if not exist "%PORTABLE_DIR%\python\python.exe" (
+        echo Downloading portable Python (~30MB)...
         if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
         
         powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip' -OutFile '%PORTABLE_DIR%\python.zip'"
         powershell -Command "Expand-Archive -Path '%PORTABLE_DIR%\python.zip' -DestinationPath '%PORTABLE_DIR%\python' -Force"
         del "%PORTABLE_DIR%\python.zip"
         
+        echo Configuring embedded Python...
+        REM Fix the .pth file - replace entire content
+        (
+            echo python310.zip
+            echo .
+            echo import site
+        ) > "%PORTABLE_DIR%\python\python310._pth"
+        
         echo Installing pip...
         powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile '%PORTABLE_DIR%\python\get-pip.py'"
-        echo import site >> "%PORTABLE_DIR%\python\python310._pth"
-        "%PORTABLE_DIR%\python\python.exe" "%PORTABLE_DIR%\python\get-pip.py"
+        "%PORTABLE_DIR%\python\python.exe" "%PORTABLE_DIR%\python\get-pip.py" --no-warn-script-location
+        
+        echo [OK] Portable Python ready!
+    ) else (
+        echo [OK] Portable Python already exists
     )
     
     cd "%PROJECT_ROOT%\backend"
