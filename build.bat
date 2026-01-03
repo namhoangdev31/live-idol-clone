@@ -168,9 +168,14 @@ if errorlevel 1 (
 )
 
 echo Installing dependencies...
-"%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location wheel setuptools Cython numpy==1.24.3
+"%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location wheel setuptools Cython numpy
+if errorlevel 1 goto :PORTABLE_FAIL
+
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location -r requirements.txt
+if errorlevel 1 goto :PORTABLE_FAIL
+
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location pyinstaller
+
 
 echo Downloading TTS models...
 "%PORTABLE_DIR%\python\python.exe" -c "from TTS.api import TTS; TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2')" 2>nul || echo Will retry during build
