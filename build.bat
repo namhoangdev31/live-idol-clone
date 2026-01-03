@@ -148,6 +148,14 @@ if not exist "%PORTABLE_DIR%\python\python.exe" (
 
 cd "%PROJECT_ROOT%\backend"
 
+REM Fix .pth file (Force recreate every time to fix broken configs)
+echo Configuring embedded Python...
+(
+    echo python310.zip
+    echo .
+    echo import site
+) > "%PORTABLE_DIR%\python\python310._pth"
+
 echo Installing dependencies...
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location -r requirements.txt
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location pyinstaller
