@@ -1,0 +1,61 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+backend/build/
+backend/dist/
+backend/*.spec
+
+# Flutter
+.dart_tool/
+.packages
+.pub/
+build/
+flutter_app/build/
+flutter_app/.dart_tool/
+flutter_app/.pub/
+flutter_app/
+flutter_app/windows/flutter/ephemeral/
+
+# Unity
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+unity_vrm/Library/
+unity_vrm/Temp/
+unity_vrm/Obj/
+unity_vrm/Logs/
+unity_vrm/UserSettings/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.VC.db
+
+# Project Specific Build Outputs
+portable_tools/
+build_output/
+installer/files/
+installer/output/
+unity_vrm_scripts/build/
