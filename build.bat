@@ -140,8 +140,8 @@ if not exist "%PORTABLE_DIR%\python\python.exe" (
     echo Downloading portable Python ^(~30MB^)...
     if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
     
-    powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip' -OutFile '%PORTABLE_DIR%\python.zip'"
-    powershell -Command "Expand-Archive -Path '%PORTABLE_DIR%\python.zip' -DestinationPath '%PORTABLE_DIR%\python' -Force"
+    powershell -Command "Invoke-WebRequest -Uri \"https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip\" -OutFile \"%PORTABLE_DIR%\python.zip\""
+    powershell -Command "Expand-Archive -Path \"%PORTABLE_DIR%\python.zip\" -DestinationPath \"%PORTABLE_DIR%\python\" -Force"
     del "%PORTABLE_DIR%\python.zip"
     
     echo Configuring embedded Python...
@@ -151,7 +151,7 @@ if not exist "%PORTABLE_DIR%\python\python.exe" (
     echo import site>> "%PORTABLE_DIR%\python\python310._pth"
     
     echo Installing pip...
-    powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile '%PORTABLE_DIR%\python\get-pip.py'"
+    powershell -Command "Invoke-WebRequest -Uri \"https://bootstrap.pypa.io/get-pip.py\" -OutFile \"%PORTABLE_DIR%\python\get-pip.py\""
     "%PORTABLE_DIR%\python\python.exe" "%PORTABLE_DIR%\python\get-pip.py" --no-warn-script-location
     
     echo [OK] Portable Python ready!
@@ -175,7 +175,7 @@ echo Checking pip...
 if errorlevel 1 (
     echo Pip not found. Installing pip...
     if not exist "%PORTABLE_DIR%\python\get-pip.py" (
-        powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile '%PORTABLE_DIR%\python\get-pip.py'"
+        powershell -Command "Invoke-WebRequest -Uri \"https://bootstrap.pypa.io/get-pip.py\" -OutFile \"%PORTABLE_DIR%\python\get-pip.py\""
     )
     "%PORTABLE_DIR%\python\python.exe" "%PORTABLE_DIR%\python\get-pip.py" --no-warn-script-location
 )
@@ -247,10 +247,10 @@ if "%FRONTEND_MODE%" EQU "portable" (
         if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
         
         REM Using verified stable version 3.19.3
-        powershell -Command "Invoke-WebRequest -Uri 'https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.19.3-stable.zip' -OutFile '%PORTABLE_DIR%\flutter.zip'"
+        powershell -Command "Invoke-WebRequest -Uri \"https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.19.3-stable.zip\" -OutFile \"%PORTABLE_DIR%\flutter.zip\""
         
         echo Extracting Flutter (this looks stuck but is working)...
-        powershell -Command "Expand-Archive -Path '%PORTABLE_DIR%\flutter.zip' -DestinationPath '%PORTABLE_DIR%' -Force"
+        powershell -Command "Expand-Archive -Path \"%PORTABLE_DIR%\flutter.zip\" -DestinationPath \"%PORTABLE_DIR%\" -Force"
         del "%PORTABLE_DIR%\flutter.zip"
         
         echo [OK] Portable Flutter downloaded!
@@ -302,7 +302,7 @@ if %UNITY_HUB_FOUND% EQU 0 (
     echo.
     echo Downloading Unity Hub Installer...
     if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
-    powershell -Command "Invoke-WebRequest -Uri 'https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.exe' -OutFile '%PORTABLE_DIR%\UnityHubSetup.exe'"
+    powershell -Command "Invoke-WebRequest -Uri \"https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.exe\" -OutFile \"%PORTABLE_DIR%\UnityHubSetup.exe\""
     
     echo Launching Unity Hub Installer...
     echo Please complete the installation and then install Unity 2021.3 LTS.
