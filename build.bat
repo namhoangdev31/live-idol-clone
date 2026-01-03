@@ -153,8 +153,19 @@ echo Configuring embedded Python...
 (
     echo python310.zip
     echo .
+    echo .
     echo import site
 ) > "%PORTABLE_DIR%\python\python310._pth"
+
+echo Checking pip...
+"%PORTABLE_DIR%\python\python.exe" -m pip --version >nul 2>&1
+if errorlevel 1 (
+    echo Pip not found. Installing pip...
+    if not exist "%PORTABLE_DIR%\python\get-pip.py" (
+        powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile '%PORTABLE_DIR%\python\get-pip.py'"
+    )
+    "%PORTABLE_DIR%\python\python.exe" "%PORTABLE_DIR%\python\get-pip.py" --no-warn-script-location
+)
 
 echo Installing dependencies...
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location -r requirements.txt
