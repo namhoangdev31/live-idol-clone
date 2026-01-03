@@ -53,22 +53,28 @@ REM ========================================
 REM Step 2: Choose Build Mode
 REM ========================================
 
-if !PYTHON_FOUND! EQU 1 if !FLUTTER_FOUND! EQU 1 (
-    set BUILD_MODE=traditional
-    echo Build Mode: TRADITIONAL ^(using installed tools^)
-    echo.
+set BACKEND_MODE=portable
+set FRONTEND_MODE=portable
+
+if !PYTHON_FOUND! EQU 1 (
+    set BACKEND_MODE=traditional
+    echo Backend Mode: TRADITIONAL ^(using installed Python !PYTHON_VER!^)
 ) else (
-    set BUILD_MODE=portable
-    echo Build Mode: PORTABLE ^(auto-download tools^)
-    echo.
-    echo Prerequisites missing. Will download portable Python.
-    echo.
+    echo Backend Mode: PORTABLE ^(will download Python^)
 )
 
+if !FLUTTER_FOUND! EQU 1 (
+    set FRONTEND_MODE=traditional
+    echo Frontend Mode: TRADITIONAL ^(using installed Flutter^)
+) else (
+    echo Frontend Mode: PORTABLE ^(will download Flutter^)
+)
+
+echo.
 pause
 
-REM Jump to appropriate section to avoid nested block syntax errors
-if "%BUILD_MODE%"=="traditional" goto :BUILD_TRADITIONAL
+REM Jump to appropriate backend build section
+if "%BACKEND_MODE%"=="traditional" goto :BUILD_TRADITIONAL
 goto :BUILD_PORTABLE
 
 :BUILD_TRADITIONAL
@@ -197,6 +203,25 @@ if exist "dist\LiveIdolBackend.exe" (
 cd "%PROJECT_ROOT%"
 goto :BUILD_FLUTTER
 
+:PORTABLE_FAIL
+echo.
+echo ==========================================
+echo ERROR: Failed to install Python dependencies
+echo ==========================================
+echo.
+echo The portable Python mode failed to compile TTS library.
+echo This typically happens because TTS requires C++ compiler.
+echo.
+echo SOLUTION: Install full Python 3.10.11 from:
+echo https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe
+echo.
+echo Make sure to check "Add Python to PATH" during installation.
+echo Then run this build script again.
+echo.
+pause
+cd "%PROJECT_ROOT%"
+exit /b 1
+
 :BUILD_FLUTTER
 REM ========================================
 REM Step 4: Build Flutter (Auto-Setup)
@@ -208,7 +233,7 @@ echo [3/5] Building Flutter App
 echo ==========================================
 echo.
 
-if !FLUTTER_FOUND! EQU 0 (
+if %FRONTEND_MODE% EQU portable (
     echo Flutter not found in system. Checking portable Flutter...
     if not exist "%PORTABLE_DIR%\flutter\bin\flutter.bat" (
         echo Downloading Flutter SDK (~900MB)...
@@ -229,7 +254,9 @@ if !FLUTTER_FOUND! EQU 0 (
     set FLUTTER_FOUND=1
 )
 
-if !FLUTTER_FOUND! EQU 1 (
+REM Check if Flutter is available (either system or portable)
+where flutter >nul 2>&1
+if not errorlevel 1 (
     cd "%PROJECT_ROOT%\flutter_app"
     
     echo Getting dependencies...
