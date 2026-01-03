@@ -68,8 +68,7 @@ print(f"Args: {args}")
 # Run PyInstaller via subprocess to properly capture exit code
 import subprocess
 result = subprocess.run(
-    [sys.executable, '-m', 'PyInstaller'] + args,
-    cwd=BACKEND_DIR
+    [sys.executable, '-m', 'PyInstaller'] + args
 )
 
 if result.returncode != 0:
