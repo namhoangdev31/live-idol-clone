@@ -249,10 +249,10 @@ if "%FRONTEND_MODE%" EQU "portable" (
         REM Using verified stable version 3.19.3
         set "FLUTTER_URL=https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.19.3-stable.zip"
         set "FLUTTER_ZIP=%PORTABLE_DIR%\flutter.zip"
-        powershell -Command "& {Invoke-WebRequest -Uri $env:FLUTTER_URL -OutFile $env:FLUTTER_ZIP}"
+        powershell -Command "Invoke-WebRequest -Uri $env:FLUTTER_URL -OutFile $env:FLUTTER_ZIP"
         
         echo Extracting Flutter (this looks stuck but is working)...
-        powershell -Command "& {Expand-Archive -Path $env:FLUTTER_ZIP -DestinationPath $env:PORTABLE_DIR -Force}"
+        powershell -Command "Expand-Archive -Path $env:FLUTTER_ZIP -DestinationPath $env:PORTABLE_DIR -Force"
         del "%PORTABLE_DIR%\flutter.zip"
         
         echo [OK] Portable Flutter downloaded!
