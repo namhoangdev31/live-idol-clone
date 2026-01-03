@@ -67,101 +67,112 @@ if !PYTHON_FOUND! EQU 1 if !FLUTTER_FOUND! EQU 1 (
 
 pause
 
-REM ========================================
-REM Step 3: Build Backend
-REM ========================================
+REM Jump to appropriate section to avoid nested block syntax errors
+if "%BUILD_MODE%"=="traditional" goto :BUILD_TRADITIONAL
+goto :BUILD_PORTABLE
 
+:BUILD_TRADITIONAL
+REM ========================================
+REM Step 3: Build Backend (Traditional)
+REM ========================================
 echo.
 echo ==========================================
-echo [2/5] Building Django Backend
+echo [2/5] Building Django Backend (Traditional)
 echo ==========================================
 echo.
 
-if "%BUILD_MODE%"=="traditional" (
-    REM Use installed Python
-    cd "%PROJECT_ROOT%\backend"
-    
-    echo Creating virtual environment...
-    python -m venv venv
-    call venv\Scripts\activate.bat
-    
-    echo Installing dependencies...
-    pip install -q -r requirements.txt
-    pip install -q pyinstaller
-    
-    echo Downloading TTS models...
-    python -c "from TTS.api import TTS; TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2')" 2>nul || echo Model download will retry during build
-    
-    echo Building executable...
-    python build_backend.py
-    
-    if exist "dist\LiveIdolBackend.exe" (
-        echo [OK] Backend built successfully!
-        if not exist "%BUILD_OUTPUT%\backend" mkdir "%BUILD_OUTPUT%\backend"
-        xcopy /E /I /Y /Q dist "%BUILD_OUTPUT%\backend"
-    ) else (
-        echo [FAIL] Backend build failed
-        cd "%PROJECT_ROOT%"
-        pause
-        exit /b 1
-    )
-    
-    deactivate
-    cd "%PROJECT_ROOT%"
-    
+cd "%PROJECT_ROOT%\backend"
+
+echo Creating virtual environment...
+python -m venv venv
+call venv\Scripts\activate.bat
+
+echo Installing dependencies...
+pip install -q -r requirements.txt
+pip install -q pyinstaller
+
+echo Downloading TTS models...
+python -c "from TTS.api import TTS; TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2')" 2>nul || echo Model download will retry during build
+
+echo Building executable...
+python build_backend.py
+
+if exist "dist\LiveIdolBackend.exe" (
+    echo [OK] Backend built successfully!
+    if not exist "%BUILD_OUTPUT%\backend" mkdir "%BUILD_OUTPUT%\backend"
+    xcopy /E /I /Y /Q dist "%BUILD_OUTPUT%\backend"
 ) else (
-    REM Portable mode - download Python
-    if not exist "%PORTABLE_DIR%\python\python.exe" (
-        echo Downloading portable Python (~30MB)...
-        if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
-        
-        powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip' -OutFile '%PORTABLE_DIR%\python.zip'"
-        powershell -Command "Expand-Archive -Path '%PORTABLE_DIR%\python.zip' -DestinationPath '%PORTABLE_DIR%\python' -Force"
-        del "%PORTABLE_DIR%\python.zip"
-        
-        echo Configuring embedded Python...
-        REM Fix the .pth file - replace entire content
-        (
-            echo python310.zip
-            echo .
-            echo import site
-        ) > "%PORTABLE_DIR%\python\python310._pth"
-        
-        echo Installing pip...
-        powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile '%PORTABLE_DIR%\python\get-pip.py'"
-        "%PORTABLE_DIR%\python\python.exe" "%PORTABLE_DIR%\python\get-pip.py" --no-warn-script-location
-        
-        echo [OK] Portable Python ready!
-    ) else (
-        echo [OK] Portable Python already exists
-    )
-    
-    cd "%PROJECT_ROOT%\backend"
-    
-    echo Installing dependencies...
-    "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location -r requirements.txt
-    "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location pyinstaller
-    
-    echo Downloading TTS models...
-    "%PORTABLE_DIR%\python\python.exe" -c "from TTS.api import TTS; TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2')" 2>nul || echo Will retry during build
-    
-    echo Building executable...
-    "%PORTABLE_DIR%\python\python.exe" build_backend.py
-    
-    if exist "dist\LiveIdolBackend.exe" (
-        echo [OK] Backend built!
-        if not exist "%BUILD_OUTPUT%\backend" mkdir "%BUILD_OUTPUT%\backend"
-        xcopy /E /I /Y /Q dist "%BUILD_OUTPUT%\backend"
-    ) else (
-        echo [FAIL] Backend build failed
-        cd "%PROJECT_ROOT%"
-        pause
-        exit /b 1
-    )
-    
+    echo [FAIL] Backend build failed
     cd "%PROJECT_ROOT%"
+    pause
+    exit /b 1
 )
 
+deactivate
+cd "%PROJECT_ROOT%"
+goto :BUILD_FLUTTER
+
+:BUILD_PORTABLE
+REM ========================================
+REM Step 3: Build Backend (Portable)
+REM ========================================
+echo.
+echo ==========================================
+echo [2/5] Building Django Backend (Portable)
+echo ==========================================
+echo.
+
+REM Portable mode - download Python
+if not exist "%PORTABLE_DIR%\python\python.exe" (
+    echo Downloading portable Python ^(~30MB^)...
+    if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
+    
+    powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip' -OutFile '%PORTABLE_DIR%\python.zip'"
+    powershell -Command "Expand-Archive -Path '%PORTABLE_DIR%\python.zip' -DestinationPath '%PORTABLE_DIR%\python' -Force"
+    del "%PORTABLE_DIR%\python.zip"
+    
+    echo Configuring embedded Python...
+    REM Creating pth file one line at a time to be safe
+    echo python310.zip> "%PORTABLE_DIR%\python\python310._pth"
+    echo .>> "%PORTABLE_DIR%\python\python310._pth"
+    echo import site>> "%PORTABLE_DIR%\python\python310._pth"
+    
+    echo Installing pip...
+    powershell -Command "Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile '%PORTABLE_DIR%\python\get-pip.py'"
+    "%PORTABLE_DIR%\python\python.exe" "%PORTABLE_DIR%\python\get-pip.py" --no-warn-script-location
+    
+    echo [OK] Portable Python ready!
+) else (
+    echo [OK] Portable Python already exists
+)
+
+cd "%PROJECT_ROOT%\backend"
+
+echo Installing dependencies...
+"%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location -r requirements.txt
+"%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location pyinstaller
+
+echo Downloading TTS models...
+"%PORTABLE_DIR%\python\python.exe" -c "from TTS.api import TTS; TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2')" 2>nul || echo Will retry during build
+
+echo Building executable...
+"%PORTABLE_DIR%\python\python.exe" build_backend.py
+
+if exist "dist\LiveIdolBackend.exe" (
+    echo [OK] Backend built!
+    if not exist "%BUILD_OUTPUT%\backend" mkdir "%BUILD_OUTPUT%\backend"
+    xcopy /E /I /Y /Q dist "%BUILD_OUTPUT%\backend"
+) else (
+    echo [FAIL] Backend build failed
+    cd "%PROJECT_ROOT%"
+    pause
+    exit /b 1
+)
+
+cd "%PROJECT_ROOT%"
+goto :BUILD_FLUTTER
+
+:BUILD_FLUTTER
 REM ========================================
 REM Step 4: Build Flutter (if available)
 REM ========================================
