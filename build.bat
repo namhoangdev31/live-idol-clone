@@ -168,6 +168,7 @@ if errorlevel 1 (
 )
 
 echo Installing dependencies...
+"%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location wheel setuptools numpy==1.24.3
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location -r requirements.txt
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location pyinstaller
 

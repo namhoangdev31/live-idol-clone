@@ -43,7 +43,7 @@ args = [
     'run_server.py',  # Entry point script
     '--name=LiveIdolBackend',
     f'--distpath={DIST_DIR}',
-    f'--buildpath={BUILD_DIR}',
+    f'--workpath={BUILD_DIR}',
     '--onefile',
     '--console',  # Keep console for debugging
     '--clean',
