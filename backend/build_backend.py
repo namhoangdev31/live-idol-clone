@@ -66,7 +66,19 @@ print(f"Output directory: {DIST_DIR}")
 print(f"Args: {args}")
 
 # Run PyInstaller
-PyInstaller.__main__.run(args)
+try:
+    PyInstaller.__main__.run(args)
+except SystemExit as e:
+    if e.code != 0:
+        print(f"\n[ERROR] PyInstaller failed with exit code: {e.code}")
+        sys.exit(1)
 
-print("\nBuild complete!")
-print(f"Executable: {DIST_DIR / 'LiveIdolBackend.exe'}")
+# Check if executable was created
+output_exe = DIST_DIR / 'LiveIdolBackend.exe'
+if not output_exe.exists():
+    print("\n[ERROR] Build failed - executable not found!")
+    sys.exit(1)
+
+print("\n[OK] Build complete!")
+print(f"Executable: {output_exe}")
+
