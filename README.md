@@ -96,6 +96,15 @@ We provide a smart `build.bat` script that automates the entire process:
 
 For more detailed issues, please check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md).
 
+* **"Microsoft Visual C++ 14.0 or greater is required"**
+    This means your computer is missing the C++ compiler needed for the TTS library.
+    **Fix via CMD (Winget):**
+    Open CMD as Administrator and run:
+    ```cmd
+    winget install -e --id Microsoft.VisualStudio.2022.BuildTools --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+    ```
+    Alternatively, download [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) manually and install "Desktop development with C++".
+
 ---
 
 ## 🤝 Contributing
