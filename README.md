@@ -32,16 +32,25 @@ build.bat
 
 ### Build Modes
 
-**Portable (Tự động nếu thiếu Python)**:
-- Download portable Python 3.10
-- Install dependencies isolated
-- Build backend
-- Không cần cài gì trước!
+**Portable (Fully Automated Mode)**:
+- 🐍 **Python**: Auto-download portable Python 3.10
+- 🐦 **Flutter**: Auto-download portable Flutter SDK (~900MB) nếu thiếu
+- 🎮 **Unity**: Auto-prepare project structure & scripts
+- 📦 **Result**: Backend + Flutter built without installing ANYTHING!
 
-**Traditional (Tự động nếu có Python + Flutter)**:
-- Dùng Python/Flutter đã cài
-- Faster build
-- Normal workflow
+**Traditional (Developer Mode)**:
+- Dùng Python/Flutter đã cài sẵn
+- Faster build (không cần download)
+- Normal workflow for devs
+
+### Unity Auto-Setup
+
+Script sẽ tự động tạo folder structure tại `unity_vrm/`.
+1. Chạy `build.bat` lần đầu → Script tạo skeleton folders & inject scripts.
+2. Mở **Unity Hub** → Add Project → Chọn folder `unity_vrm`.
+3. Unity sẽ load project. Import **UniVRM** package.
+4. Build → `Build/VRMRenderer.exe`.
+5. Chạy lại `build.bat` để package vào installer.
 
 ---
 

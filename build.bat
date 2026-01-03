@@ -168,7 +168,7 @@ if errorlevel 1 (
 )
 
 echo Installing dependencies...
-"%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location wheel setuptools numpy==1.24.3
+"%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location wheel setuptools Cython numpy==1.24.3
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location -r requirements.txt
 "%PORTABLE_DIR%\python\python.exe" -m pip install -q --no-warn-script-location pyinstaller
 
@@ -194,7 +194,7 @@ goto :BUILD_FLUTTER
 
 :BUILD_FLUTTER
 REM ========================================
-REM Step 4: Build Flutter (if available)
+REM Step 4: Build Flutter (Auto-Setup)
 REM ========================================
 
 echo.
@@ -203,14 +203,35 @@ echo [3/5] Building Flutter App
 echo ==========================================
 echo.
 
+if !FLUTTER_FOUND! EQU 0 (
+    echo Flutter not found in system. Checking portable Flutter...
+    if not exist "%PORTABLE_DIR%\flutter\bin\flutter.bat" (
+        echo Downloading Flutter SDK (~900MB)...
+        if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
+        
+        REM Using verified stable version 3.19.3
+        powershell -Command "Invoke-WebRequest -Uri 'https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.19.3-stable.zip' -OutFile '%PORTABLE_DIR%\flutter.zip'"
+        
+        echo Extracting Flutter (this looks stuck but is working)...
+        powershell -Command "Expand-Archive -Path '%PORTABLE_DIR%\flutter.zip' -DestinationPath '%PORTABLE_DIR%' -Force"
+        del "%PORTABLE_DIR%\flutter.zip"
+        
+        echo [OK] Portable Flutter downloaded!
+    )
+    
+    echo Adding Portable Flutter to PATH...
+    set "PATH=%PORTABLE_DIR%\flutter\bin;!PATH!"
+    set FLUTTER_FOUND=1
+)
+
 if !FLUTTER_FOUND! EQU 1 (
     cd "%PROJECT_ROOT%\flutter_app"
     
     echo Getting dependencies...
-    flutter pub get
+    call flutter pub get
     
     echo Building Windows app...
-    flutter build windows --release
+    call flutter build windows --release
     
     if exist "build\windows\runner\Release\live_idol_clone.exe" (
         echo [OK] Flutter built!
@@ -221,17 +242,10 @@ if !FLUTTER_FOUND! EQU 1 (
     )
     
     cd "%PROJECT_ROOT%"
-) else (
-    echo Flutter not available. Skipping...
-    echo.
-    echo To build Flutter later:
-    echo   1. Install Flutter SDK
-    echo   2. cd flutter_app
-    echo   3. flutter build windows --release
 )
 
 REM ========================================
-REM Step 5: Unity Instructions
+REM Step 5: Unity Auto-Setup & Check
 REM ========================================
 
 echo.
@@ -239,24 +253,43 @@ echo ==========================================
 echo [4/5] Unity VRM Renderer
 echo ==========================================
 echo.
-echo Unity requires manual setup:
-echo.
-echo   1. Download Unity Hub + Unity 2021.3 LTS
-echo   2. Create project at: %PROJECT_ROOT%\unity_vrm
-echo   3. Import UniVRM package
-echo   4. Copy scripts from unity_vrm_scripts\ to Assets\Scripts\
-echo   5. Add VRM avatar to Assets\StreamingAssets\
-echo   6. Build to: unity_vrm\Build\VRMRenderer.exe
-echo.
-echo Press any key when Unity build is complete (or skip)...
-pause >nul
 
+if exist "%PROJECT_ROOT%\unity_vrm" (
+    echo [INFO] Injecting scripts into Unity project...
+    
+    if not exist "%PROJECT_ROOT%\unity_vrm\Assets\Scripts" mkdir "%PROJECT_ROOT%\unity_vrm\Assets\Scripts"
+    if not exist "%PROJECT_ROOT%\unity_vrm\Assets\StreamingAssets" mkdir "%PROJECT_ROOT%\unity_vrm\Assets\StreamingAssets"
+    
+    copy /Y "%PROJECT_ROOT%\unity_vrm_scripts\*.cs" "%PROJECT_ROOT%\unity_vrm\Assets\Scripts\" >nul
+    echo [OK] Scripts injected
+    
+    echo.
+    echo Please build the project in Unity Editor now if you haven't.
+    echo Build Output expected at: unity_vrm\Build\VRMRenderer.exe
+    
+) else (
+    echo [INFO] Unity project folder 'unity_vrm' not found.
+    echo        Creating skeleton folders for you...
+    mkdir "%PROJECT_ROOT%\unity_vrm"
+    mkdir "%PROJECT_ROOT%\unity_vrm\Assets"
+    mkdir "%PROJECT_ROOT%\unity_vrm\Assets\Scripts"
+    mkdir "%PROJECT_ROOT%\unity_vrm\Assets\StreamingAssets"
+    
+    copy /Y "%PROJECT_ROOT%\unity_vrm_scripts\*.cs" "%PROJECT_ROOT%\unity_vrm\Assets\Scripts\" >nul
+    echo [OK] Scripts prepared in 'unity_vrm/Assets/Scripts'
+    
+    echo.
+    echo IMPORTANT: Open Unity Hub -> Add Project -> Select "%PROJECT_ROOT%\unity_vrm"
+    echo Then Build -> Windows x64 -> Output to "Build/VRMRenderer.exe"
+)
+
+echo.
 if exist "%PROJECT_ROOT%\unity_vrm\Build\VRMRenderer.exe" (
     echo [OK] Unity build found!
     if not exist "%BUILD_OUTPUT%\unity" mkdir "%BUILD_OUTPUT%\unity"
     xcopy /E /I /Y /Q "%PROJECT_ROOT%\unity_vrm\Build" "%BUILD_OUTPUT%\unity"
 ) else (
-    echo [SKIP] Unity not built yet
+    echo [SKIP] Unity build not found. You can build it manually later.
 )
 
 REM ========================================
