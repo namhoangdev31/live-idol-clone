@@ -1,174 +1,243 @@
 # Live Idol Clone
 
-**Voice Clone + VRM Avatar cho Livestream**
+**Voice Cloning + 3D VRM Avatar cho Livestream**
 
-Hệ thống PoC kết hợp voice cloning (Coqui TTS) và 3D VRM avatar, xuất real-time video + audio vào OBS.
+Hệ thống PoC kết hợp Coqui TTS voice cloning và Unity VRM avatar, xuất real-time video + audio vào OBS. Chạy hoàn toàn offline trên Windows.
 
 ---
 
 ## 🎯 Tính Năng
 
-✅ **Voice Cloning** - Clone giọng nói từ audio mẫu (5-10 giây)  
-✅ **3D VRM Avatar** - Render avatar với lip-sync theo giọng  
-✅ **OBS Integration** - Video (Window Capture) + Audio (VB-CABLE)  
-✅ **Local Processing** - Chạy hoàn toàn offline trên Windows
+- ✅ **Voice Cloning** - Clone giọng từ audio mẫu 5-10s
+- ✅ **3D VRM Avatar** - Render avatar với lip-sync
+- ✅ **OBS Integration** - Video + Audio real-time
+- ✅ **Offline** - Chạy 100% local, không cần internet
 
 ---
 
-## 📋 Yêu Cầu Hệ Thống
+## 📦 Build (Dành Cho Developer)
 
-- Windows 10/11 (64-bit)
-- RAM: 8GB+ (16GB khuyến nghị)
-- GPU: Tùy chọn (4GB+ VRAM cho TTS nhanh hơn)
-- Dung lượng: ~5GB
-- **VB-CABLE** (tải miễn phí tại https://vb-audio.com/Cable/)
+### Quick Start ⚡
+
+```batch
+build.bat
+```
+
+**Chỉ 1 lệnh!** Script tự động:
+- ✅ Detect Python/Flutter có sẵn hay không
+- ✅ **Portable mode**: Tự download Python nếu chưa có
+- ✅ **Traditional mode**: Dùng Python/Flutter đã cài
+- ✅ Build backend + Flutter + Unity (nếu có)
+- ✅ Prepare installer files
+
+### Build Modes
+
+**Portable (Tự động nếu thiếu Python)**:
+- Download portable Python 3.10
+- Install dependencies isolated
+- Build backend
+- Không cần cài gì trước!
+
+**Traditional (Tự động nếu có Python + Flutter)**:
+- Dùng Python/Flutter đã cài
+- Faster build
+- Normal workflow
 
 ---
 
-## � Sử Dụng (End Users)
-
-### Cài Đặt
+## 💿 Cài Đặt (End Users)
 
 1. Tải `LiveIdolCloneInstaller.exe`
-2. Chạy installer và làm theo hướng dẫn
-3. Cài VB-CABLE khi được nhắc
+2. Chạy installer
+3. Cài **VB-CABLE** (https://vb-audio.com/Cable/) - bắt buộc
 4. Khởi động lại máy
-5. Mở "Live Idol Clone" từ Start Menu
+5. Chạy "Live Idol Clone" từ Start Menu
 
-### Sử Dụng Ứng Dụng
+---
 
-1. **Khởi động** - Đợi backend khởi tạo (~10-15 giây)
-2. **Kiểm tra** - Đảm bảo "Backend" và "TTS Engine" màu xanh
-3. **Nhập text** - Gõ nội dung cần nói (tối đa 1000 ký tự)
-4. **Click "Speak"** - Audio được tạo trong 2-10 giây
-5. **Xem trong OBS** - Avatar sẽ nói với giọng đã clone
+## 🚀 Sử Dụng
 
-### Thiết Lập Voice Profile (Tùy Chọn)
+### Khởi Động
 
-Để clone giọng tốt hơn:
+1. Launch app - Đợi backend init (~10s)
+2. Check status indicators màu xanh
+3. Nhập text (max 1000 ký tự)
+4. Click "Speak" → Audio generated (2-10s)
 
-1. Vào: `C:\Program Files\LiveIdolClone\backend\voice_profiles\default\`
-2. Thu âm 5-10 giây giọng nói rõ ràng (WAV, 16-bit, 22050 Hz)
+### Clone Giọng (Tùy Chọn)
+
+1. Vào `C:\Program Files\LiveIdolClone\backend\voice_profiles\default\`
+2. Thu âm 5-10s giọng rõ ràng (WAV 16-bit 22050Hz)
 3. Lưu thành `reference.wav`
-4. Khởi động lại app
+4. Restart app
 
 ---
 
 ## 🎬 Cấu Hình OBS
 
-### Video (Unity Window)
+### Video
 
-1. Thêm Source → **Window Capture**
-2. Chọn window: `[VRMRenderer.exe]: Unity`
-3. Điều chỉnh vị trí/kích thước
+1. Add Source → **Window Capture**
+2. Window: `[VRMRenderer.exe]: Unity`
+3. Resize/position
 
-### Audio (Virtual Audio)
+### Audio
 
-1. Thêm Source → **Audio Input Capture**
+1. Add Source → **Audio Input Capture**
 2. Device: `CABLE Output (VB-Audio Virtual Cable)`
-3. Điều chỉnh volume trong mixer
+3. Adjust volume
 
 ### Test
 
-1. Chạy Unity VRM Renderer
-2. Chạy Live Idol Clone
-3. Tạo speech
-4. Kiểm tra OBS:
-   - ✅ Thấy avatar animation
-   - ✅ Nghe được audio đồng bộ
+- Start Unity VRM Renderer
+- Generate speech trong app
+- Check OBS preview có video + audio sync
 
 ---
 
-## 🛠️ Build Từ Source Code
+## 🛠️ Troubleshooting
 
-### Quick Start (Tự Động)
+| Vấn Đề | Giải Pháp |
+|--------|-----------|
+| Backend không chạy | Check port 8000, chạy với admin |
+| TTS chậm | Dùng GPU (CUDA) hoặc giảm text |
+| OBS không audio | Cài VB-CABLE, restart máy |
+| Flutter build fail | `flutter doctor`, cài Visual Studio C++ |
+| Voice không clone | Thêm reference.wav vào voice_profiles |
 
-```bash
-# Trên macOS/Linux
-./build_production.sh
+---
 
-# Trên Windows
-build_all.bat
+## 📁 Project Structure
+
+```
+live-idol-clone/
+├── backend/             # Django + TTS engine
+├── flutter_app/         # Windows UI
+├── unity_vrm_scripts/   # Unity C# scripts
+├── installer/           # Inno Setup
+│
+├── build_portable.bat   # Portable build (no install!)
+├── build_all.bat        # Traditional build
+├── check_setup.bat      # Prerequisites check
+└── README.md            # This file
 ```
 
-### Chi Tiết
+---
 
-Xem file **`COMPLETE_GUIDE.md`** để có hướng dẫn đầy đủ về:
-- Cài đặt môi trường dev
-- Build từng component
-- Unity setup
-- Tạo installer
-- Troubleshooting
+## 🔧 Build Script
+
+**Chỉ cần 1 file**: `build.bat`
+
+Tự động:
+- ✅ Detect environment (Python/Flutter có hay không)
+- ✅ Chọn build mode (Portable hoặc Traditional)
+- ✅ Build tất cả components
+- ✅ Prepare installer files
 
 ---
 
-## ⚠️ Troubleshooting
+## API Reference
 
-### Backend không khởi động
+**Base URL**: `http://127.0.0.1:8000/api`
 
-- Check Python 3.10+ đã cài
-- Check port 8000 không bị chiếm
-- Chạy với quyền Administrator
+### Endpoints
 
-### TTS chậm
+```bash
+# Health check
+GET /api/health
+→ {"status": "ok", "tts_ready": true}
 
-- Dùng GPU (cần CUDA toolkit)
-- Giảm độ dài text
-- Chờ model load xong (lần đầu)
+# Generate speech
+POST /api/speak
+Body: {"text": "Hello", "voice_profile": "default", "language": "en"}
+→ {"audio_path": "...", "duration_ms": 3500, "status": "success"}
 
-### OBS không có audio
-
-1. Cài VB-CABLE
-2. Khởi động lại máy
-3. Set CABLE Output trong OBS
-4. Khởi động lại OBS
-
-### Unity không hiện
-
-- Check Unity app đang chạy
-- Refresh window list trong OBS
-- Thử dùng Game Capture
+# List profiles
+GET /api/voice-profiles
+→ {"profiles": ["default"], "count": 1}
+```
 
 ---
 
-## 📚 Documentation
+## ⚙️ Configuration
 
-| File | Mục Đích |
-|------|----------|
-| **COMPLETE_GUIDE.md** | Tài liệu đầy đủ (build, setup, troubleshoot) |
-| **BUILD_AUTOMATION.md** | Hướng dẫn chạy script tự động |
-| **backend/voice_profiles/default/README.md** | Setup voice profile |
+### Backend
+
+File: `backend/config/settings.py`
+
+```python
+TTS_DEVICE = 'cuda'  # hoặc 'cpu'
+VOICE_PROFILES_DIR = 'voice_profiles/'
+OUTPUT_DIR = 'output/'
+```
+
+### Flutter
+
+File: `flutter_app/lib/services/api_client.dart`
+
+```dart
+baseUrl: 'http://127.0.0.1:8000/api'
+```
+
+### Unity
+
+File: `Assets/Scripts/AudioReceiver.cs`
+
+```csharp
+watchDirectory = @"C:\path\to\backend\output";
+```
 
 ---
 
-## 🔒 Privacy & Consent
+## 📊 Build Times
 
-- Xử lý hoàn toàn local, không gửi data ra ngoài
-- Chỉ clone giọng có sự đồng ý
-- Voice profile lưu local, không upload
-- Tuân thủ quy định về AI-generated content
+| Component | Time | Size |
+|-----------|------|------|
+| Backend | 10-15 min | ~500MB |
+| Flutter | 5-10 min | ~50MB |
+| Unity | 5-10 min | ~100MB |
+| Installer | 2 min | ~650MB |
+
+---
+
+## 🔒 Legal & Privacy
+
+- ✅ 100% local processing
+- ✅ Không upload data
+- ✅ Chỉ clone giọng có consent
+- ⚠️ Label output là AI-generated
 
 ---
 
 ## 🆘 Support
 
-1. Xem mục Troubleshooting ở trên
-2. Đọc `COMPLETE_GUIDE.md` để biết chi tiết
-3. Check logs trong terminal/console
-4. Tạo issue trên GitHub repository
+- Check Troubleshooting section
+- Review terminal logs
+- Verify VB-CABLE installed
+- Ensure all prerequisites met
+
+---
+
+## 📚 Tech Stack
+
+- **Backend**: Django 4.2 + Coqui TTS + PyTorch
+- **Frontend**: Flutter 3.x (Windows)
+- **Avatar**: Unity 2021.3+ + UniVRM
+- **Audio**: VB-CABLE virtual device
+- **Packaging**: PyInstaller + Inno Setup
 
 ---
 
 ## 🙏 Credits
 
-- **Coqui TTS**: https://github.com/coqui-ai/TTS
-- **UniVRM**: https://github.com/vrm-c/UniVRM
-- **VB-CABLE**: https://vb-audio.com/Cable/
-- **Django**: https://www.djangoproject.com/
-- **Flutter**: https://flutter.dev/
+- [Coqui TTS](https://github.com/coqui-ai/TTS) - Voice cloning
+- [UniVRM](https://github.com/vrm-c/UniVRM) - VRM support
+- [VB-CABLE](https://vb-audio.com/Cable/) - Virtual audio
+- [Django](https://www.djangoproject.com/) - Backend framework
+- [Flutter](https://flutter.dev/) - UI framework
 
 ---
 
-**Dự án hoàn chỉnh và sẵn sàng cho production build!** 🚀
+**Ready for production! Build once, distribute forever.** 🚀
 
-_Để build từ source code, xem `COMPLETE_GUIDE.md` hoặc chạy `./build_production.sh`_
+_Để build: Chạy `build_portable.bat` (zero install) hoặc `build_all.bat` (traditional)_
