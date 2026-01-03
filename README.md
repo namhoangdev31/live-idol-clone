@@ -57,7 +57,7 @@ We provide a smart `build.bat` script that automates the entire process:
     ```
 
 2. **Prepare External Files**:
-    * **Unity**: Open `unity_vrm` in Unity Hub. Build for Windows (x64) to `unity_vrm_scripts/build/VRMRenderer.exe`.
+    * **Unity**: This requires a manual setup steps. Please read [UNITY_SETUP.md](docs/UNITY_SETUP.md) to create the project and build `VRMRenderer.exe`.
     * **OBS**: Download **OBS Studio Portable** and extract it to `installer/files/obs-studio-portable/` (Ensure `bin/64bit/obs64.exe` exists).
 
 3. **Run Build Script**:
