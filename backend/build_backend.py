@@ -65,13 +65,16 @@ print("Building Live Idol Backend...")
 print(f"Output directory: {DIST_DIR}")
 print(f"Args: {args}")
 
-# Run PyInstaller
-try:
-    PyInstaller.__main__.run(args)
-except SystemExit as e:
-    if e.code != 0:
-        print(f"\n[ERROR] PyInstaller failed with exit code: {e.code}")
-        sys.exit(1)
+# Run PyInstaller via subprocess to properly capture exit code
+import subprocess
+result = subprocess.run(
+    [sys.executable, '-m', 'PyInstaller'] + args,
+    cwd=BACKEND_DIR
+)
+
+if result.returncode != 0:
+    print(f"\n[ERROR] PyInstaller failed with exit code: {result.returncode}")
+    sys.exit(1)
 
 # Check if executable was created
 output_exe = DIST_DIR / 'LiveIdolBackend.exe'
@@ -81,4 +84,5 @@ if not output_exe.exists():
 
 print("\n[OK] Build complete!")
 print(f"Executable: {output_exe}")
+
 
