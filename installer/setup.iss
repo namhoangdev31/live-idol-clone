@@ -79,8 +79,7 @@ Source: "files\flutter\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 ; Django Backend
 Source: "files\backend\LiveIdolBackend.exe"; DestDir: "{app}\backend"; Flags: ignoreversion; Components: backend
-Source: "files\backend\config\*"; DestDir: "{app}\backend\config"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: backend
-Source: "files\backend\api\*"; DestDir: "{app}\backend\api"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: backend
+
 
 ; Bundled Unity Runtime (Pre-built)
 Source: "..\unity_vrm_scripts\build\*"; DestDir: "{app}\backend\renderer"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: unity
