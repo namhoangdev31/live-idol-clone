@@ -4,85 +4,94 @@ This project creates a **completely local AI Vtuber** that talks, moves, and liv
 
 **✨ New "All-in-One" Architecture:**
 
-*   **Zero Configuration**: No VB-CABLE, no manual OBS setup required.
-*   **Self-Contained**: Installer bundles Backend, Client, Unity Renderer, and OBS Portable.
-*   **One-Click Launch**: Open the app, and it automatically launches all necessary components.
+* **Zero Configuration**: No VB-CABLE, no manual OBS setup required.
+* **Self-Contained**: Installer bundles Backend, Client, Unity Renderer, and OBS Portable.
+* **One-Click Launch**: Open the app, and it automatically launches all necessary components.
 
 ---
 
 ## 🏗️ Architecture
 
-1.  **Backend (Django)**:
-    *   Handles AI logic (LLM/TTS).
-    *   Manages system processes (Unity, OBS).
-    *   Generates audio via XTTS v2.
-2.  **Frontend (Flutter)**:
-    *   User control panel.
-    *   Displays Status (Backend, Unity, OBS).
-    *   Provides "Auto-Launch" buttons.
-3.  **Renderer (Unity)**:
-    *   3D VRM Avatar visualization.
-    *   Receives LipSync data (Planned).
-4.  **Broadcast (OBS Portable)**:
-    *   Pre-configured local broadcasting suite.
-    *   Controlled via WebSocket by the Backend.
+1. **Backend (Django)**:
+    * Handles AI logic (LLM/TTS).
+    * Manages system processes (Unity, OBS).
+    * Generates audio via XTTS v2.
+2. **Frontend (Flutter)**:
+    * User control panel.
+    * Displays Status (Backend, Unity, OBS).
+    * Provides "Auto-Launch" buttons.
+3. **Renderer (Unity)**:
+    * 3D VRM Avatar visualization.
+    * Receives LipSync data (Planned).
+4. **Broadcast (OBS Portable)**:
+    * Pre-configured local broadcasting suite.
+    * Controlled via WebSocket by the Backend.
 
 ---
 
 ## 🛠️ Build & Install
 
-### Prerequisites
+### Requirements
 
-*   Windows 10/11 (x64)
-*   **Unity Hub** & **Unity 2021.3 LTS** (for building the Renderer)
-*   **Inno Setup 6+** (for creating the installer)
+#### End-User (To Run)
+* Windows 10/11 (x64)
+* **None!** (Everything is bundled in the installer)
+
+#### Developer (To Build)
+* **Unity Hub** & **Unity 2021.3 LTS** (Only for building the Renderer executable)
+* **Inno Setup 6+** (Only for creating the installer)
+
+### ⚠️ Note on Audio Sync
+This PoC currently uses **File-based Audio Sync** for maximum stability and zero-driver configuration.
+* **Latency**: There is a small delay (TTS generation + File I/O).
+* **Sync**: Lipsync is timer-based. "True streaming" (low latency) is planned for future versions.
 
 ### Automatic Build
 
 We provide a smart `build.bat` script that automates the entire process:
 
-1.  **Clone the repository**:
+1. **Clone the repository**:
     ```bash
     git clone https://github.com/your-username/live-idol-clone.git
     cd live-idol-clone
     ```
 
-2.  **Prepare External Files**:
-    *   **Unity**: Open `unity_vrm` in Unity Hub. Build for Windows (x64) to `unity_vrm_scripts/build/VRMRenderer.exe`.
-    *   **OBS**: Download **OBS Studio Portable** and extract it to `installer/files/obs-studio-portable/` (Ensure `bin/64bit/obs64.exe` exists).
+2. **Prepare External Files**:
+    * **Unity**: Open `unity_vrm` in Unity Hub. Build for Windows (x64) to `unity_vrm_scripts/build/VRMRenderer.exe`.
+    * **OBS**: Download **OBS Studio Portable** and extract it to `installer/files/obs-studio-portable/` (Ensure `bin/64bit/obs64.exe` exists).
 
-3.  **Run Build Script**:
+3. **Run Build Script**:
     Double-click `build.bat`. It will:
-    *   ✅ Detect/Download Python & Flutter (Portable Mode).
-    *   ✅ Build Django Backend (Exe).
-    *   ✅ Build Flutter Client (Exe).
-    *   ✅ Detect Unity Build.
-    *   ✅ Compile "All-in-One" Installer using Inno Setup.
+    * ✅ Detect/Download Python & Flutter (Portable Mode).
+    * ✅ Build Django Backend (Exe).
+    * ✅ Build Flutter Client (Exe).
+    * ✅ Detect Unity Build.
+    * ✅ Compile "All-in-One" Installer using Inno Setup.
 
-4.  **Result**:
+4. **Result**:
     Run the installer found in `installer/output/LiveIdolCloneInstaller.exe`.
 
 ---
 
 ## 🚀 Usage
 
-1.  Run the **Live Idol Clone** shortcut on your desktop.
-2.  **Dashboard**:
-    *   **Unity Status**: Click "Launch" if not running.
-    *   **OBS Status**: Click "Launch" if not running.
-3.  **To Speak**:
-    *   Type text in the box and hit "Speak".
-    *   Audio will play directly through OBS (Media Source).
+1. Run the **Live Idol Clone** shortcut on your desktop.
+2. **Dashboard**:
+    * **Unity Status**: Click "Launch" if not running.
+    * **OBS Status**: Click "Launch" if not running.
+3. **To Speak**:
+    * Type text in the box and hit "Speak".
+    * Audio will play directly through OBS (Media Source).
 
 ---
 
 ## 🧩 Troubleshooting
 
-*   **Unity not launching?**
+* **Unity not launching?**
     Check if `VRMRenderer.exe` exists in `backend/renderer`.
-*   **OBS not connecting?**
+* **OBS not connecting?**
     Ensure OBS WebSocket Server is enabled on port `4455` (Password `password`). The bundled Portable version should be pre-configured, but you can check manually.
-*   **"Build Failed"?**
+* **"Build Failed"?**
     Check `build.log` for details. Ensure you have internet access for downloading dependencies on the first run.
 
 For more detailed issues, please check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md).

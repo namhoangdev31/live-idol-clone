@@ -113,14 +113,43 @@ namespace LiveIdol
             }
         }
 
+        [System.Serializable]
+        private class VisemeMessage
+        {
+            public string @event;
+            public int duration_ms;
+        }
+
         private void ProcessMessage(string json)
         {
-            // Parse JSON and trigger LipSync
-            // Example: {"viseme": "aa", "duration": 0.2}
-            // For now, just logging
             Debug.Log($"Received LipSync Data: {json}");
+            try
+            {
+                var msg = JsonUtility.FromJson<VisemeMessage>(json);
+                if (msg != null && msg.@event == "speech_start" && lipSyncController != null)
+                {
+                   // Trigger simple open mouth for duration
+                   // Since LipSyncController might be complex, we can try to call a method like 'OpenMouth(duration)'
+                   // Or for this PoC, just log it clearly or start a coroutine if MonoBehaviour
+                   StartCoroutine(SimpleMouthRoutine(msg.duration_ms / 1000f));
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error parsing LipSync JSON: {e.Message}");
+            }
+        }
+
+        private System.Collections.IEnumerator SimpleMouthRoutine(float duration)
+        {
+            Debug.Log($"[LipSync] Opening mouth for {duration} seconds");
+            // Placeholder: If LipSync controller has blendshapes, set 'A' to 1.0
+            // if (lipSyncController != null) lipSyncController.SetMouthOpen(1.0f);
             
-            // TODO: Map to lipSyncController.PlayViseme(...)
+            yield return new WaitForSeconds(duration);
+            
+            Debug.Log($"[LipSync] Closing mouth");
+            // if (lipSyncController != null) lipSyncController.SetMouthOpen(0.0f);
         }
     }
 }

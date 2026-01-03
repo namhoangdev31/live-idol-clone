@@ -143,6 +143,13 @@ class TTSEngine:
                 f"duration={duration_ms}ms, generation_time={generation_time:.2f}s"
             )
             
+            # TRIGGER UNITY LIPSYNC (Simple Contract)
+            from .unity_control import UnityController
+            UnityController().send_viseme({
+                "event": "speech_start",
+                "duration_ms": duration_ms
+            })
+
             # TRIGGER OBS PLAYBACK
             from .obs_control import OBSController
             obs_status = OBSController().play_audio(str(output_path))
