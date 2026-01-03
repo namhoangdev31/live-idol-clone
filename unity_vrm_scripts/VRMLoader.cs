@@ -2,9 +2,10 @@ using UnityEngine;
 using UniGLTF;
 using VRM;
 using System.IO;
+using System.Threading.Tasks;
 
 /// <summary>
-/// Loads and initializes a VRM avatar from file
+/// Loads and initializes a VRM avatar from file using modern UniVRM API
 /// </summary>
 public class VRMLoader : MonoBehaviour
 {
@@ -15,13 +16,15 @@ public class VRMLoader : MonoBehaviour
     public float cameraDistance = 1.5f;
     public Vector3 cameraOffset = new Vector3(0, 1.4f, 0);
     
+    // Instance reference
     private GameObject vrmInstance;
     private Camera mainCamera;
     
-    void Start()
+    // Async void Start is acceptable for top-level Unity entry points
+    async void Start()
     {
         SetupCamera();
-        LoadVRM();
+        await LoadVRM();
     }
     
     void SetupCamera()
@@ -36,17 +39,20 @@ public class VRMLoader : MonoBehaviour
         // Position camera to frame avatar
         mainCamera.transform.position = cameraOffset + new Vector3(0, 0, -cameraDistance);
         mainCamera.transform.LookAt(cameraOffset);
-        mainCamera.backgroundColor = new Color(0.1f, 0.1f, 0.15f); // Dark background
+        mainCamera.backgroundColor = new Color(0.1f, 0.1f, 0.15f);
     }
     
-    void LoadVRM()
+    async Task LoadVRM()
     {
         // Try multiple locations for VRM file
         string[] searchPaths = new string[]
         {
+            // 1. StreamingAssets (Best for build)
             Path.Combine(Application.streamingAssetsPath, vrmFilePath),
+            // 2. Project root/VRM (Dev)
             Path.Combine(Application.dataPath, "..", "VRM", vrmFilePath),
-            Path.Combine(Application.dataPath, "..", "assets", vrmFilePath),
+            // 3. Project root (Dev)
+            Path.Combine(Application.dataPath, "..", vrmFilePath),
         };
         
         string foundPath = null;
@@ -62,10 +68,7 @@ public class VRMLoader : MonoBehaviour
         if (foundPath == null)
         {
             Debug.LogError($"VRM file not found. Searched paths:");
-            foreach (string path in searchPaths)
-            {
-                Debug.LogError($"  - {path}");
-            }
+            foreach (string path in searchPaths) Debug.LogError($"  - {path}");
             return;
         }
         
@@ -73,45 +76,60 @@ public class VRMLoader : MonoBehaviour
         
         try
         {
+            // --- MODERN UNIVRM LOADING (v0.100+) ---
+            // Use VrmUtility.LoadBytesAsync for robust loading
             byte[] vrmBytes = File.ReadAllBytes(foundPath);
-            var context = new VRMImporterContext();
-            context.ParseGlb(vrmBytes);
-            context.Load();
             
-            vrmInstance = context.Root;
-            vrmInstance.transform.position = Vector3.zero;
-            vrmInstance.transform.rotation = Quaternion.identity;
+            // AllowUnsafeDesktopUsage = true allows loading files from disk in builds
+            // VrmUtility.LoadBytesAsync returns a RuntimeGltfInstance
+            var instance = await VrmUtility.LoadBytesAsync(foundPath, vrmBytes);
             
-            // Add components for animation
-            if (!vrmInstance.GetComponent<LipSync>())
+            // Important: Show meshes (they are hidden by default in some versions)
+            instance.ShowMeshes();
+            
+            // Get the root GameObject
+            vrmInstance = instance.Root;
+            
+            // ---------------------------------------
+            
+            if (vrmInstance != null)
             {
-                vrmInstance.AddComponent<LipSync>();
+                vrmInstance.transform.position = Vector3.zero;
+                vrmInstance.transform.rotation = Quaternion.identity;
+                
+                // Add required components
+                SetupComponents(vrmInstance);
+                
+                Debug.Log("VRM loaded successfully!");
             }
-            
-            if (!vrmInstance.GetComponent<IdleAnimation>())
-            {
-                vrmInstance.AddComponent<IdleAnimation>();
-            }
-            
-            if (!vrmInstance.GetComponent<AudioReceiver>())
-            {
-                vrmInstance.AddComponent<AudioReceiver>();
-            }
-            
-            // Add audio source if not present
-            if (!vrmInstance.GetComponent<AudioSource>())
-            {
-                AudioSource audioSource = vrmInstance.AddComponent<AudioSource>();
-                audioSource.playOnAwake = false;
-                audioSource.spatialBlend = 0f; // 2D sound
-            }
-            
-            Debug.Log("VRM loaded successfully!");
         }
         catch (System.Exception e)
         {
             Debug.LogError($"Failed to load VRM: {e.Message}");
             Debug.LogError(e.StackTrace);
+        }
+    }
+    
+    void SetupComponents(GameObject target)
+    {
+        // Add LipSync if missing
+        if (!target.GetComponent<LipSync>())
+            target.AddComponent<LipSync>();
+            
+        // Add IdleAnimation if missing
+        if (!target.GetComponent<IdleAnimation>())
+            target.AddComponent<IdleAnimation>();
+            
+        // Add AudioReceiver if missing
+        if (!target.GetComponent<AudioReceiver>())
+            target.AddComponent<AudioReceiver>();
+            
+        // Add AudioSource for voice
+        if (!target.GetComponent<AudioSource>())
+        {
+            AudioSource audioSource = target.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0f; // 2D sound for clearer voice
         }
     }
     

@@ -18,18 +18,25 @@ The project currently uses the **UniVRM 0.x** API (e.g., `v0.112.0` or similar).
 2.  In Unity, go to **Assets -> Import Package -> Custom Package...**
 3.  Select the downloaded file and click **Import All**.
 
-## 3. Import Scripts
-Copy the C# scripts from the repository into your Unity project:
-1.  Locate the folder `unity_vrm_scripts` in the repo.
-2.  Copy all `.cs` files (`LipSync.cs`, `LipSyncReceiver.cs`, `VRMLoader.cs`, etc.).
-3.  Paste them into `unity_vrm/Assets/Scripts/` (Create the `Scripts` folder if needed).
+## 3. Import Scripts (File Copy)
+This step is done **outside** of Unity (using Finder or File Explorer).
+
+1.  **Open two windows**:
+    *   Window A: Go to `live-idol-clone/unity_vrm_scripts/`.
+    *   Window B: Go to `live-idol-clone/unity_vrm/Assets/` (This folder was created by Unity in Step 1).
+2.  **Create folder**: In Window B, create a new folder named `Scripts`.
+3.  **Copy files**:
+    *   Select all `.cs` files in Window A (`LipSync.cs`, `LipSyncReceiver.cs`, `VRMLoader.cs`, etc.).
+    *   **Copy** and **Paste** them into `Window B/Scripts`.
+4.  **Verify**: Switch back to the Unity Editor. load bar will appear. You should now see the `Scripts` folder in the Project panel (bottom).
 
 ## 4. Scene Setup
 1.  Open the default SampleScene.
 2.  **Create an Empty GameObject** named `VRMController`.
 3.  **Attach Components** to `VRMController`:
-    *   Drag `VRMLoader.cs` onto it.
-    *   Drag `LipSyncReceiver.cs` onto it.
+    *   **Method A (Drag & Drop)**: Find `VRMLoader.cs` in the Project window (bottom) and drag it onto the `VRMController` name in the Hierarchy or the Inspector window.
+    *   **Method B (Search)**: Click the **Add Component** button in the Inspector (Right side), type `VRMLoader`, and hit Enter.
+    *   Repeat for `LipSyncReceiver.cs`.
 4.  **Configure VRMLoader**:
     *   **Debug / Import Mode**: Checked (if you want to test in Editor).
     *   **Default Avatar**: (Optional) Drag a .vrm file into `Assets/StreamingAssets` if you want a default.
