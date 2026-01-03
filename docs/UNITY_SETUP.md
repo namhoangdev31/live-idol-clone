@@ -34,9 +34,13 @@ This step is done **outside** of Unity (using Finder or File Explorer).
 1.  Open the default SampleScene.
 2.  **Create an Empty GameObject** named `VRMController`.
 3.  **Attach Components** to `VRMController`:
-    *   **Method A (Drag & Drop)**: Find `VRMLoader.cs` in the Project window (bottom) and drag it onto the `VRMController` name in the Hierarchy or the Inspector window.
-    *   **Method B (Search)**: Click the **Add Component** button in the Inspector (Right side), type `VRMLoader`, and hit Enter.
-    *   Repeat for `LipSyncReceiver.cs`.
+    > ⚠️ **IMPORTANT**: Only attach these **2 scripts**. The others (`IdleAnimation`, `AudioReceiver`, `LipSync`) are added **automatically** to the Avatar when it loads.
+    
+    *   **Method A (Drag & Drop)**: Find `VRMLoader.cs` in the Project window (bottom) and drag it onto the `VRMController`.
+    *   **Method B (Search)**: Click the **Add Component** button in the Inspector, type `VRMLoader`, and hit Enter.
+    *   **Repeat** for `LipSyncReceiver.cs`.
+    
+    (Do **NOT** attach `IdleAnimation`, `AudioReceiver`, or `LipSync` manually).
 4.  **Configure VRMLoader**:
     *   **Debug / Import Mode**: Checked (if you want to test in Editor).
     *   **Default Avatar**: (Optional) Drag a .vrm file into `Assets/StreamingAssets` if you want a default.
@@ -44,7 +48,7 @@ This step is done **outside** of Unity (using Finder or File Explorer).
     *   **Port**: `5000` (Default).
 
 ## 5. Build for Windows
-1.  Go to **File -> Build Settings**.
+1.  Go to **File -> Build Profiles** (or **Build Settings**). Shortcut: `Ctrl + Shift + B`.
 2.  Add the current scene (`Add Open Scenes`).
 3.  **Platform**: Windows.
 4.  **Architecture**: x86_64.
