@@ -22,7 +22,6 @@ build/
 flutter_app/build/
 flutter_app/.dart_tool/
 flutter_app/.pub/
-flutter_app/
 flutter_app/windows/flutter/ephemeral/
 
 # Unity
