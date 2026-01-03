@@ -87,6 +87,12 @@ echo [2/5] Building Django Backend (Traditional)
 echo ==========================================
 echo.
 
+REM Check if backend already built
+if exist "%BUILD_OUTPUT%\backend\LiveIdolBackend.exe" (
+    echo Backend already built, skipping...
+    goto :BUILD_FLUTTER
+)
+
 cd "%PROJECT_ROOT%\backend"
 
 echo Creating virtual environment...
