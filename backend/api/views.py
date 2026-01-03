@@ -53,6 +53,7 @@ def system_status(request):
         'voice_profiles': tts_engine.get_available_profiles(),
         'output_directory': str(tts_engine.output_dir),
         'obs_connected': obs_controller.connected,
+        'obs_port': obs_controller.port,
         'unity_running': unity_controller.is_running(),
     })
 

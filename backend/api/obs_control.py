@@ -23,21 +23,41 @@ class OBSController:
         return cls._instance
 
     def connect(self):
-        """Establish connection to OBS WebSocket."""
+        """Establish connection to OBS WebSocket. Auto-scan ports if default fails."""
         try:
+            # 1. Try current configured port
+            logger.info(f"Connecting to OBS on port {self.port}...")
             self.client = obsws(self.host, self.port, self.password)
             self.client.connect()
             self.connected = True
-            logger.info("Connected to OBS WebSocket")
+            logger.info(f"Connected to OBS WebSocket on port {self.port}")
             self.setup_default_scene()
             return True
-        except Exception as e:
-            logger.error(f"Failed to connect to OBS: {e}")
+        except Exception:
+            # 2. If failed, scan range 4455-4460 (quick scan) since we might have launched on dynamic port
+            logger.warning(f"Connection failed on {self.port}. Scanning ports...")
+            for p in range(4455, 4460): # limit scan range for speed
+                if p == self.port: continue
+                try:
+                    client = obsws(self.host, p, self.password)
+                    client.connect()
+                    self.client = client
+                    self.port = p # Update current port
+                    self.connected = True
+                    logger.info(f"Found OBS on port {p}")
+                    self.setup_default_scene()
+                    return True
+                except:
+                    continue
+            
+            logger.error("Failed to connect to OBS on any port.")
             self.connected = False
             return False
 
     def ensure_connected(self):
         """Check connection and reconnect if necessary."""
+        # Simple check if client object exists and implies connected?
+        # obsws doesn't have reliable is_connected property without pinging
         if not self.connected:
             return self.connect()
         return True
@@ -126,6 +146,61 @@ class OBSController:
         """Placeholder for triggering Unity animation via OBS if needed (unlikely)."""
         pass
 
+    def get_available_port(self, start_port=4455, max_port=4499):
+        """Find a free port in range."""
+        import socket
+        for port in range(start_port, max_port + 1):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                if s.connect_ex(('localhost', port)) != 0:
+                    return port
+        return start_port
+
+    def update_obs_config(self, port):
+        """
+        Update OBS Portable global.ini with selected port.
+        Path: obs-studio-portable/config/obs-studio/global.ini
+        Section: [ObsWebSocket] -> ServerPort=xxxx
+        """
+        obs_dir = self.get_obs_path()
+        if not obs_dir:
+            return
+
+        # config path: obs-studio-portable/config/obs-studio/global.ini
+        # obs_dir is .../bin/64bit/obs64.exe
+        # so config is at .../../../config/obs-studio/global.ini
+        config_path = obs_dir.parent.parent.parent / 'config' / 'obs-studio' / 'global.ini'
+        
+        if not config_path.exists():
+            logger.warning(f"OBS config not found at {config_path}. Creating basic config.")
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            # Create basic init if missing
+            with open(config_path, 'w') as f:
+                f.write("[ObsWebSocket]\nServerPort=4455\nServerEnabled=true\n")
+
+        try:
+            # We use simple string replacement to avoid configparser issues with OBS ini format quirks
+            with open(config_path, 'r') as f:
+                content = f.read()
+            
+            if "[ObsWebSocket]" not in content:
+                content += f"\n[ObsWebSocket]\nServerEnabled=true\nServerPort={port}\n"
+            else:
+                # Regex replace port
+                import re
+                if "ServerPort=" in content:
+                    content = re.sub(r"ServerPort=\d+", f"ServerPort={port}", content)
+                else:
+                    # Insert after header
+                    content = content.replace("[ObsWebSocket]", f"[ObsWebSocket]\nServerPort={port}")
+            
+            with open(config_path, 'w') as f:
+                f.write(content)
+            
+            logger.info(f"Updated OBS config to use port: {port}")
+            
+        except Exception as e:
+            logger.error(f"Failed to update OBS config: {e}")
+
     def get_obs_path(self):
         """
         Get absolute path to OBS executable in portable mode.
@@ -145,15 +220,22 @@ class OBSController:
         if exe_path.exists():
             return exe_path
             
+        # Dev fallback (installer/files/...)
+        dev_path = settings.BASE_DIR.parent / 'installer' / 'files' / 'obs-studio-portable' / 'bin' / '64bit' / 'obs64.exe'
+        if dev_path.exists():
+            return dev_path
+
         return None
 
     def launch(self):
-        """Launch OBS Studio in Portable Mode, Minimized."""
-        # Check if already running (simple check)
+        """Launch OBS Studio in Portable Mode with Dynamic Port."""
+        # Check if already running
         import psutil
         for proc in psutil.process_iter(['name']):
             if proc.info['name'] == 'obs64.exe':
                 logger.info("OBS is already running.")
+                # Assumes running instance is on default port or we can't easily check
+                # Ideally, we should check its network connection, but simplicity first.
                 return True
 
         exe_path = self.get_obs_path()
@@ -161,23 +243,24 @@ class OBSController:
             logger.error(f"OBS executable not found at: {exe_path}")
             return False
 
+        # 1. Select Port
+        port = self.get_available_port()
+        self.port = port
+        
+        # 2. Update Config
+        self.update_obs_config(port)
+
         try:
-            logger.info(f"Launching OBS Portable: {exe_path}")
+            logger.info(f"Launching OBS Portable: {exe_path} on port {port}")
             # Launch with portable flag and minimize
-            # Note: OBS doesn't have a built-in 'minimize' flag but we can start it.
-            # --portable is critical.
-            # --minimize-to-tray might work if configured in OBS settings, 
-            # but we can't force it easily via generic cmdline without user config.
-            # We'll just launch it.
-            cwd = exe_path.parent.parent.parent # obs-studio-portable root for portable mode? 
-            # Actually standard portable mode runs from bin/64bit but needs 'portable_mode' file in root or flag.
-            # Command: obs64.exe --portable
-            
             subprocess.Popen(
                 [str(exe_path), '--portable', '--startreplaybuffer'],
                 cwd=exe_path.parent,
                 creationflags=subprocess.CREATE_NEW_CONSOLE
             )
+            
+            # Wait a bit for startup
+            time.sleep(2)
             return True
         except Exception as e:
             logger.error(f"Failed to launch OBS: {e}")

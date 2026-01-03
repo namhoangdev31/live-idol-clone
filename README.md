@@ -90,7 +90,7 @@ We provide a smart `build.bat` script that automates the entire process:
 * **Unity not launching?**
     Check if `VRMRenderer.exe` exists in `backend/renderer`.
 * **OBS not connecting?**
-    Ensure OBS WebSocket Server is enabled on port `4455` (Password `password`). The bundled Portable version should be pre-configured, but you can check manually.
+    The app automatically finds an open port (range `4455-4499`) and configures OBS. Check the dashboard to see which port is active. If issues persist, ensure `obs64.exe` is not blocked by firewall.
 * **"Build Failed"?**
     Check `build.log` for details. Ensure you have internet access for downloading dependencies on the first run.
 

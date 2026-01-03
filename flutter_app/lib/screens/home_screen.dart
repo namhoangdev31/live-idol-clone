@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'OBS Link',
                     isActive: _systemStatus?.obsConnected ?? false,
                     message: _systemStatus?.obsConnected == true
-                        ? 'Connected'
+                        ? 'Connected (Port ${_systemStatus!.obsPort})'
                         : 'Disconnected',
                   ),
                 ),
@@ -428,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildInstruction('2. Type your text in the input field'),
                   _buildInstruction('3. Click "Speak" to generate audio'),
                   _buildInstruction(
-                    '4. Ensure OBS is running with WebSocket enabled (Port 4455)',
+                    '4. OBS WebSocket enabled (Port ${_systemStatus?.obsPort ?? 4455})',
                   ),
                 ],
               ),

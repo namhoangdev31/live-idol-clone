@@ -56,6 +56,7 @@ class SystemStatus {
   final List<String> voiceProfiles;
   final String outputDirectory;
   final bool obsConnected;
+  final int obsPort;
   final bool unityRunning;
 
   SystemStatus({
@@ -64,6 +65,7 @@ class SystemStatus {
     required this.voiceProfiles,
     required this.outputDirectory,
     required this.obsConnected,
+    required this.obsPort,
     required this.unityRunning,
   });
 
@@ -74,6 +76,7 @@ class SystemStatus {
       voiceProfiles: List<String>.from(json['voice_profiles'] ?? []),
       outputDirectory: json['output_directory'] ?? '',
       obsConnected: json['obs_connected'] ?? false,
+      obsPort: json['obs_port'] ?? 4455,
       unityRunning: json['unity_running'] ?? false,
     );
   }
