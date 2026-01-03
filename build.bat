@@ -248,11 +248,33 @@ REM ========================================
 REM Step 5: Unity Auto-Setup & Check
 REM ========================================
 
-echo.
 echo ==========================================
 echo [4/5] Unity VRM Renderer
 echo ==========================================
 echo.
+
+set UNITY_HUB_FOUND=0
+if exist "C:\Program Files\Unity Hub\Unity Hub.exe" set UNITY_HUB_FOUND=1
+
+if %UNITY_HUB_FOUND% EQU 0 (
+    echo [!] Unity Hub not found in default location.
+    echo.
+    echo Unity is required for the 3D Avatar Renderer.
+    echo.
+    echo Downloading Unity Hub Installer...
+    if not exist "%PORTABLE_DIR%" mkdir "%PORTABLE_DIR%"
+    powershell -Command "Invoke-WebRequest -Uri 'https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.exe' -OutFile '%PORTABLE_DIR%\UnityHubSetup.exe'"
+    
+    echo Launching Unity Hub Installer...
+    echo Please complete the installation and then install Unity 2021.3 LTS.
+    start "" "%PORTABLE_DIR%\UnityHubSetup.exe"
+    
+    echo.
+    echo Press any key after you have finished installing Unity...
+    pause >nul
+) else (
+    echo [OK] Unity Hub detected.
+)
 
 if exist "%PROJECT_ROOT%\unity_vrm" (
     echo [INFO] Injecting scripts into Unity project...
@@ -265,7 +287,7 @@ if exist "%PROJECT_ROOT%\unity_vrm" (
     
     echo.
     echo Please build the project in Unity Editor now if you haven't.
-    echo Build Output expected at: unity_vrm\Build\VRMRenderer.exe
+    echo Build Output expected at: unity_vrm_scripts\build\VRMRenderer.exe
     
 ) else (
     echo [INFO] Unity project folder 'unity_vrm' not found.
@@ -280,14 +302,15 @@ if exist "%PROJECT_ROOT%\unity_vrm" (
     
     echo.
     echo IMPORTANT: Open Unity Hub -> Add Project -> Select "%PROJECT_ROOT%\unity_vrm"
-    echo Then Build -> Windows x64 -> Output to "Build/VRMRenderer.exe"
+    echo Then Build -> Windows x64 -> Output to "unity_vrm_scripts/build/VRMRenderer.exe"
 )
 
 echo.
-if exist "%PROJECT_ROOT%\unity_vrm\Build\VRMRenderer.exe" (
+echo.
+if exist "%PROJECT_ROOT%\unity_vrm_scripts\build\VRMRenderer.exe" (
     echo [OK] Unity build found!
     if not exist "%BUILD_OUTPUT%\unity" mkdir "%BUILD_OUTPUT%\unity"
-    xcopy /E /I /Y /Q "%PROJECT_ROOT%\unity_vrm\Build" "%BUILD_OUTPUT%\unity"
+    xcopy /E /I /Y /Q "%PROJECT_ROOT%\unity_vrm_scripts\build" "%BUILD_OUTPUT%\unity"
 ) else (
     echo [SKIP] Unity build not found. You can build it manually later.
 )
@@ -328,6 +351,14 @@ if exist "%BUILD_OUTPUT%\unity\VRMRenderer.exe" (
 
 if exist "%PROJECT_ROOT%\backend\voice_profiles\default\README.md" (
     copy /Y "%PROJECT_ROOT%\backend\voice_profiles\default\README.md" "%INSTALLER_FILES%\assets\voice_profiles\default\" >nul
+)
+
+REM Copy OBS Portable if present
+if exist "%PROJECT_ROOT%\installer\files\obs-studio-portable\bin\64bit\obs64.exe" (
+    echo [OK] OBS Portable found in installer/files
+) else (
+    echo [WARNING] OBS Portable NOT found in installer/files/obs-studio-portable
+    echo           Installer will miss OBS!
 )
 
 REM ========================================
@@ -382,10 +413,26 @@ if !COMPONENTS! GEQ 2 (
     echo Your builds are ready!
     echo.
     echo To create installer:
-    echo   1. Open Inno Setup
-    echo   2. Open: %PROJECT_ROOT%\installer\setup.iss
-    echo   3. Click "Compile"
-    echo   4. Output: installer\output\LiveIdolCloneInstaller.exe
+    echo   1. Make sure Inno Setup 6+ is installed and in PATH (ISCC.exe)
+    echo   2. Checking for ISCC...
+    
+    where iscc >nul 2>&1
+    if not errorlevel 1 (
+        echo [INFO] Inno Setup compiler found. Building installer...
+        echo.
+        iscc "%PROJECT_ROOT%\installer\setup.iss"
+        
+        if exist "%PROJECT_ROOT%\installer\output\LiveIdolCloneInstaller*.exe" (
+             echo.
+             echo [SUCCESS] Installer successfully created!
+             echo Location: %PROJECT_ROOT%\installer\output
+        ) else (
+             echo [FAIL] Installer compilation failed. Check console output.
+        )
+    ) else (
+        echo [WARN] ISCC not found in PATH.
+        echo Please manually open "%PROJECT_ROOT%\installer\setup.iss" and click Compile.
+    )
     echo.
 ) else (
     echo Please complete missing builds before creating installer.

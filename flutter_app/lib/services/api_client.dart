@@ -122,6 +122,49 @@ class ApiClient {
     }
   }
 
+  /// Attempt to connect to OBS
+  Future<bool> connectObs() async {
+    try {
+      final response = await _client
+          .post(Uri.parse('$baseUrl/obs/connect'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Launch Unity Renderer
+  Future<Map<String, dynamic>> launchUnity() async {
+    try {
+      final response = await _client
+          .post(Uri.parse('$baseUrl/unity/launch'))
+          .timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'status': 'failed', 'error': 'Connection error: $e'};
+    }
+  }
+
+  /// Launch OBS Studio
+  Future<Map<String, dynamic>> launchObs() async {
+    try {
+      final response = await _client
+          .post(Uri.parse('$baseUrl/obs/launch'))
+          .timeout(const Duration(seconds: 10));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'status': 'failed', 'error': 'Connection error: $e'};
+    }
+  }
+
   void dispose() {
     _client.close();
   }

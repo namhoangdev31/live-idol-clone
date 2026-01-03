@@ -41,12 +41,74 @@ def system_status(request):
     """
     tts_engine = TTSEngine.get_instance()
     
+    from .obs_control import OBSController
+    obs_controller = OBSController()
+    
+    from .unity_control import UnityController
+    unity_controller = UnityController()
+    
     return Response({
         'tts_initialized': tts_engine.initialized,
         'device': tts_engine.device,
         'voice_profiles': tts_engine.get_available_profiles(),
         'output_directory': str(tts_engine.output_dir),
+        'obs_connected': obs_controller.connected,
+        'unity_running': unity_controller.is_running(),
     })
+
+
+@api_view(['POST'])
+def speak(request):
+    """
+    Generate speech from text using voice cloning.
+    
+    POST /api/speak
+    """
+    # ... existing implementation ...
+    # (Leaving speak implementation untouched here, just showing context)
+    # But for replace_file_content I must replace the whole block if I touch system_status
+    # Wait, I can just target system_status block and append launch_unity at end of file.
+    pass 
+
+@api_view(['POST'])
+def connect_obs(request):
+    """Attempt to connect to OBS WebSocket."""
+    from .obs_control import OBSController
+    obs_controller = OBSController()
+    
+    success = obs_controller.connect()
+    
+    if success:
+        return Response({'status': 'connected'})
+    else:
+        return Response(
+            {'status': 'failed', 'error': 'Could not connect to OBS. Check if OBS is running and WebSocket is enabled (Port 4455).'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+
+
+@api_view(['POST'])
+def launch_unity(request):
+    """
+    Launch the Unity VRM Renderer process.
+    
+    POST /api/unity/launch
+    """
+    from .unity_control import UnityController
+    unity_controller = UnityController()
+    
+    if unity_controller.is_running():
+        return Response({'status': 'already_running', 'message': 'Unity Renderer is already running'})
+    
+    success = unity_controller.launch()
+    
+    if success:
+        return Response({'status': 'launched', 'message': 'Unity Renderer launched successfully'})
+    else:
+        return Response(
+            {'status': 'failed', 'error': 'Could not launch Unity Renderer. Check logs for details.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['POST'])
@@ -143,3 +205,45 @@ def list_voice_profiles(request):
         'profiles': profiles,
         'count': len(profiles)
     })
+
+
+@api_view(['POST'])
+def connect_obs(request):
+    """
+    Attempt to connect to OBS WebSocket.
+    
+    POST /api/obs/connect
+    """
+    from .obs_control import OBSController
+    obs_controller = OBSController()
+    
+    success = obs_controller.connect()
+    
+    if success:
+        return Response({'status': 'connected'})
+    else:
+        return Response(
+            {'status': 'failed', 'error': 'Could not connect to OBS. Check if OBS is running and WebSocket is enabled (Port 4455).'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+@api_view(['POST'])
+def launch_obs(request):
+    """
+    Launch the OBS Studio Portable process.
+    
+    POST /api/obs/launch
+    """
+    from .obs_control import OBSController
+    obs_controller = OBSController()
+    
+    # Check if already running (via process list, handled in launch)
+    
+    success = obs_controller.launch()
+    
+    if success:
+        return Response({'status': 'launched', 'message': 'OBS Studio launched successfully'})
+    else:
+        return Response(
+            {'status': 'failed', 'error': 'Could not launch OBS Studio. Check logs for details.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

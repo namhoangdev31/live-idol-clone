@@ -55,12 +55,16 @@ class SystemStatus {
   final String device;
   final List<String> voiceProfiles;
   final String outputDirectory;
+  final bool obsConnected;
+  final bool unityRunning;
 
   SystemStatus({
     required this.ttsInitialized,
     required this.device,
     required this.voiceProfiles,
     required this.outputDirectory,
+    required this.obsConnected,
+    required this.unityRunning,
   });
 
   factory SystemStatus.fromJson(Map<String, dynamic> json) {
@@ -69,6 +73,8 @@ class SystemStatus {
       device: json['device'] ?? 'unknown',
       voiceProfiles: List<String>.from(json['voice_profiles'] ?? []),
       outputDirectory: json['output_directory'] ?? '',
+      obsConnected: json['obs_connected'] ?? false,
+      unityRunning: json['unity_running'] ?? false,
     );
   }
 }

@@ -82,8 +82,11 @@ Source: "files\backend\LiveIdolBackend.exe"; DestDir: "{app}\backend"; Flags: ig
 Source: "files\backend\config\*"; DestDir: "{app}\backend\config"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: backend
 Source: "files\backend\api\*"; DestDir: "{app}\backend\api"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: backend
 
-; Unity VRM Renderer
-Source: "files\unity\*"; DestDir: "{app}\unity"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: unity
+; Bundled Unity Runtime (Pre-built)
+Source: "..\unity_vrm_scripts\build\*"; DestDir: "{app}\backend\renderer"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: unity
+
+; OBS Studio Portable
+Source: "files\obs-studio-portable\*"; DestDir: "{app}\backend\obs-studio-portable"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: app
 
 ; Assets and Samples
 Source: "files\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: samples
@@ -95,19 +98,16 @@ Source: "..\BUILD.md"; DestDir: "{app}"; Flags: ignoreversion
 ; Voice Profiles directory
 Source: "..\backend\voice_profiles\default\README.md"; DestDir: "{app}\backend\voice_profiles\default"; Flags: ignoreversion; Components: samples
 
-; Output directory (create empty)
-; NOTE: This is handled in [Dirs] section
-
 [Dirs]
 ; Create output directories
 DirName: "{app}\backend\output"; Permissions: users-full
 DirName: "{app}\backend\voice_profiles"; Permissions: users-full
 DirName: "{app}\logs"; Permissions: users-full
+DirName: "{app}\backend\renderer"; Permissions: users-full
 
 [Icons]
 ; Start Menu
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
-Name: "{group}\Unity VRM Renderer"; Filename: "{app}\unity\VRMRenderer.exe"; WorkingDir: "{app}\unity"; Components: unity
 Name: "{group}\Voice Profiles Folder"; Filename: "{app}\backend\voice_profiles"
 Name: "{group}\README"; Filename: "{app}\README.md"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
@@ -123,63 +123,24 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Fil
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-var
-  VBCableInstallPage: TOutputMsgWizardPage;
-  VBCableInstalled: Boolean;
-
 function InitializeSetup(): Boolean;
 begin
   Result := True;
 end;
 
+// No VB-CABLE checks needed anymore for All-in-One version
 procedure InitializeWizard();
 begin
-  // Create a custom page for VB-CABLE check
-  VBCableInstallPage := CreateOutputMsgPage(wpWelcome,
-    'VB-CABLE Virtual Audio Device Required',
-    'Live Idol Clone requires VB-CABLE for audio routing to OBS',
-    'VB-CABLE is a free virtual audio device that allows audio to be routed to OBS Studio.' + #13#10 + #13#10 +
-    'This installer will check if VB-CABLE is installed. If not, you will be prompted to download and install it separately.' + #13#10 + #13#10 +
-    'Download VB-CABLE from: https://vb-audio.com/Cable/' + #13#10 + #13#10 +
-    'Installation will continue regardless, but audio features will not work without VB-CABLE.');
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
-var
-  RegKey: String;
 begin
   Result := '';
-  
-  // Check if VB-CABLE is installed
-  RegKey := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8E4F71C3-DA08-40E9-9F4E-34858ADB5FC5}_is1';
-  VBCableInstalled := RegKeyExists(HKEY_LOCAL_MACHINE, RegKey);
-  
-  if not VBCableInstalled then
-  begin
-    RegKey := 'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{8E4F71C3-DA08-40E9-9F4E-34858ADB5FC5}_is1';
-    VBCableInstalled := RegKeyExists(HKEY_LOCAL_MACHINE, RegKey);
-  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
-var
-  ResultCode: Integer;
 begin
-  if CurStep = ssPostInstall then
-  begin
-    // Check VB-CABLE installation status
-    if not VBCableInstalled then
-    begin
-      if MsgBox('VB-CABLE Virtual Audio Device is not installed.' + #13#10 + #13#10 +
-                'Would you like to download VB-CABLE now?' + #13#10 + #13#10 +
-                'Live Idol Clone requires VB-CABLE for audio routing to OBS.' + #13#10 +
-                'You will need to install it manually after downloading.',
-                mbConfirmation, MB_YESNO) = IDYES then
-      begin
-        ShellExec('open', 'https://vb-audio.com/Cable/', '', '', SW_SHOW, ewNoWait, ResultCode);
-      end;
-    end;
-  end;
+  // No post-install checks needed
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
@@ -189,7 +150,6 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
-  // No custom logic needed
 end;
 
 [UninstallDelete]
@@ -200,4 +160,5 @@ Type: filesandordirs; Name: "{app}\logs\*"
 [Messages]
 ; Custom messages
 WelcomeLabel2=This will install [name/ver] on your computer.%n%nLive Idol Clone is a voice cloning and VRM avatar system for livestreaming.%n%nIt is recommended that you close all other applications before continuing.
-FinishedLabel=Live Idol Clone has been installed successfully!%n%nDon't forget to install VB-CABLE Virtual Audio Device if you haven't already.
+FinishedLabel=Live Idol Clone has been installed successfully!
+

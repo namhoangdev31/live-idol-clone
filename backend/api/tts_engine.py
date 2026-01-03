@@ -143,11 +143,16 @@ class TTSEngine:
                 f"duration={duration_ms}ms, generation_time={generation_time:.2f}s"
             )
             
+            # TRIGGER OBS PLAYBACK
+            from .obs_control import OBSController
+            obs_status = OBSController().play_audio(str(output_path))
+            
             return {
                 'audio_path': str(output_path),
                 'duration_ms': duration_ms,
                 'generation_time_ms': int(generation_time * 1000),
                 'voice_profile': voice_profile,
+                'obs_status': obs_status,
                 'status': 'success'
             }
             
