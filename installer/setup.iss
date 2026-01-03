@@ -47,8 +47,8 @@ PrivilegesRequiredOverridesAllowed=dialog
 
 ; UI
 WizardStyle=modern
-WizardImageFile=installer_banner.bmp
-WizardSmallImageFile=installer_small.bmp
+; WizardImageFile=installer_banner.bmp
+; WizardSmallImageFile=installer_small.bmp
 DisableWelcomePage=no
 
 ; Uninstall
