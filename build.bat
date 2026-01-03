@@ -276,12 +276,30 @@ if not errorlevel 1 (
     echo Building Windows app...
     call flutter build windows --release
     
-    if exist "build\windows\runner\Release\live_idol_clone.exe" (
+    set "FLUTTER_OUT_DIR=build\windows\x64\runner\Release"
+    set "FLUTTER_EXE=flutter_app.exe"
+    
+    if not exist "!FLUTTER_OUT_DIR!\!FLUTTER_EXE!" (
+        REM Fallback to non-x64 path
+        set "FLUTTER_OUT_DIR=build\windows\runner\Release"
+    )
+    
+    if not exist "!FLUTTER_OUT_DIR!\!FLUTTER_EXE!" (
+        REM Fallback to project name executable
+        set "FLUTTER_EXE=live_idol_clone.exe"
+    )
+
+    if exist "!FLUTTER_OUT_DIR!\!FLUTTER_EXE!" (
         echo [OK] Flutter built!
         if not exist "%BUILD_OUTPUT%\flutter" mkdir "%BUILD_OUTPUT%\flutter"
-        xcopy /E /I /Y /Q build\windows\runner\Release "%BUILD_OUTPUT%\flutter"
+        xcopy /E /I /Y /Q "!FLUTTER_OUT_DIR!" "%BUILD_OUTPUT%\flutter"
+        
+        REM Rename if necessary to match expected name
+        if exist "%BUILD_OUTPUT%\flutter\flutter_app.exe" (
+            ren "%BUILD_OUTPUT%\flutter\flutter_app.exe" "live_idol_clone.exe"
+        )
     ) else (
-        echo [FAIL] Flutter build failed
+        echo [FAIL] Flutter build failed - Artifact not found in !FLUTTER_OUT_DIR!
     )
     
     cd "%PROJECT_ROOT%"
