@@ -94,7 +94,7 @@ python -m venv venv
 call venv\Scripts\activate.bat
 
 echo Installing dependencies...
-python -m pip install --upgrade pip setuptools wheel
+python -m pip install --upgrade pip wheel
 pip install -q -r requirements.txt
 pip install -q pyinstaller
 
