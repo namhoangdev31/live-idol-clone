@@ -2,6 +2,7 @@ import logging
 import subprocess
 import os
 import psutil
+import sys
 from pathlib import Path
 from django.conf import settings
 
@@ -22,9 +23,12 @@ class UnityController:
         Get absolute path to VRMRenderer.exe.
         Assumes it is located in 'renderer' sibling directory or configured path.
         """
-        # In dev: live-idol-clone/unity_vrm/Build/VRMRenderer.exe (Mock)
-        # In prod: {app_dir}/backend/renderer/VRMRenderer.exe
-        
+        if getattr(sys, 'frozen', False):
+            # In production (frozen), executable is in {app}/backend/LiveIdolBackend.exe
+            # Renderer is in {app}/backend/renderer/VRMRenderer.exe
+            exe_dir = Path(sys.executable).parent
+            return exe_dir / 'renderer' / self.PROCESS_NAME
+            
         # Check standard location relative to BASE_DIR
         # prod: BASE_DIR (backend/config/..) -> backend -> renderer
         renderer_dir = settings.BASE_DIR.parent / 'renderer'

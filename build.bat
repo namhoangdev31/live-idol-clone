@@ -288,8 +288,7 @@ if "%FRONTEND_MODE%" EQU "portable" (
         REM Using verified stable version 3.19.3
         set "FLUTTER_URL=https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.19.3-stable.zip"
         set "FLUTTER_ZIP=%PORTABLE_DIR%\flutter.zip"
-        set "FLUTTER_URL=https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.19.3-stable.zip"
-        set "FLUTTER_ZIP=%PORTABLE_DIR%\flutter.zip"
+
         powershell -Command "Invoke-WebRequest -Uri $env:FLUTTER_URL -OutFile $env:FLUTTER_ZIP"
         
         echo Extracting Flutter...
