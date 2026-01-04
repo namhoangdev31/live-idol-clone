@@ -29,13 +29,31 @@ set FLUTTER_FOUND=0
 set BUILD_MODE=unknown
 
 REM Check Python
+set PYTHON_CMD=python
 python --version >nul 2>&1
 if not errorlevel 1 (
     for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VER=%%i
-    echo   [OK] Python !PYTHON_VER!
+    echo   [OK] Python !PYTHON_VER! found ^(command: python^)
     set PYTHON_FOUND=1
 ) else (
-    echo   [X] Python not found
+    REM Try 'py' launcher (common on Windows)
+    py --version >nul 2>&1
+    if not errorlevel 1 (
+         for /f "tokens=2" %%i in ('py --version 2^>^&1') do set PYTHON_VER=%%i
+         echo   [OK] Python !PYTHON_VER! found ^(command: py^)
+         set PYTHON_FOUND=1
+         set PYTHON_CMD=py
+    ) else (
+        echo   [X] Python not found in PATH
+    )
+)
+
+REM Check if backend binary already exists in source (to skip build)
+if exist "%PROJECT_ROOT%\backend\dist\LiveIdolBackend.exe" (
+    echo   [!] Found existing backend binary in backend\dist
+    set BACKEND_BINARY_EXISTS=1
+) else (
+    set BACKEND_BINARY_EXISTS=0
 )
 
 REM Check Flutter
@@ -60,7 +78,12 @@ if !PYTHON_FOUND! EQU 1 (
     set BACKEND_MODE=traditional
     echo Backend Mode: TRADITIONAL ^(using installed Python !PYTHON_VER!^)
 ) else (
-    echo Backend Mode: PORTABLE ^(will download Python^)
+    if !BACKEND_BINARY_EXISTS! EQU 1 (
+         set BACKEND_MODE=skip
+         echo Backend Mode: SKIP ^(using existing binary^)
+    ) else (
+         echo Backend Mode: PORTABLE ^(will download Python^)
+    )
 )
 
 if !FLUTTER_FOUND! EQU 1 (
@@ -74,8 +97,24 @@ echo.
 pause
 
 REM Jump to appropriate backend build section
+if "%BACKEND_MODE%"=="skip" goto :BUILD_SKIP
 if "%BACKEND_MODE%"=="traditional" goto :BUILD_TRADITIONAL
 goto :BUILD_PORTABLE
+
+:BUILD_SKIP
+echo.
+echo ==========================================
+echo [2/5] Skipping Backend Build (Using Existing Binary)
+echo ==========================================
+echo.
+echo [!] Using binary from: %PROJECT_ROOT%\backend\dist\LiveIdolBackend.exe
+if not exist "%BUILD_OUTPUT%\backend" mkdir "%BUILD_OUTPUT%\backend"
+xcopy /Y /Q "%PROJECT_ROOT%\backend\dist\LiveIdolBackend.exe" "%BUILD_OUTPUT%\backend\"
+if exist "%PROJECT_ROOT%\backend\dist\voice_profiles" xcopy /E /I /Y /Q "%PROJECT_ROOT%\backend\dist\voice_profiles" "%BUILD_OUTPUT%\backend\voice_profiles"
+if exist "%PROJECT_ROOT%\backend\dist\config" xcopy /E /I /Y /Q "%PROJECT_ROOT%\backend\dist\config" "%BUILD_OUTPUT%\backend\config"
+if exist "%PROJECT_ROOT%\backend\dist\api" xcopy /E /I /Y /Q "%PROJECT_ROOT%\backend\dist\api" "%BUILD_OUTPUT%\backend\api"
+echo [OK] Backend binary copied!
+goto :BUILD_FLUTTER
 
 :BUILD_TRADITIONAL
 REM ========================================
