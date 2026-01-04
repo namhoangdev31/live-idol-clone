@@ -44,6 +44,14 @@ dependencies:
   # WebSocket for real-time status
   web_socket_channel: ^2.4.0
 
+  # Image and file pickers
+  image_picker: ^1.0.4
+  file_picker: ^6.1.1
+  http_parser: ^4.0.2
+  desktop_drop: ^0.4.4
+  image_cropper: ^5.0.1
+  path_provider: ^2.1.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

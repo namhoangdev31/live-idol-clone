@@ -248,3 +248,310 @@ def launch_obs(request):
             {'status': 'failed', 'error': 'Could not launch OBS Studio. Check logs for details.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+# ============================================================================
+# Image Upload & Management Endpoints
+# ============================================================================
+
+@api_view(['POST'])
+def upload_image(request):
+    """
+    Upload an image file (avatar, background, or overlay).
+    
+    POST /api/images/upload
+    
+    Form data:
+        file: Image file
+        category: 'avatar', 'background', or 'overlay'
+    """
+    from .image_manager import ImageManager
+    
+    # Get uploaded file
+    if 'file' not in request.FILES:
+        return Response(
+            {'error': 'No file provided'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    uploaded_file = request.FILES['file']
+    category = request.data.get('category', 'background')
+    
+    # Save image
+    result = ImageManager.save_image(uploaded_file, category)
+    
+    if result['success']:
+        return Response(result, status=status.HTTP_201_CREATED)
+    else:
+        return Response(
+            {'error': result['error']},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['GET'])
+def list_images(request, category):
+    """
+    List all images in a category.
+    
+    GET /api/images/{category}
+    
+    Params:
+        category: 'avatar', 'background', or 'overlay'
+    """
+    from .image_manager import ImageManager
+    
+    images = ImageManager.list_images(category)
+    
+    return Response({
+        'category': category,
+        'images': images,
+        'count': len(images)
+    })
+
+
+@api_view(['DELETE'])
+def delete_image(request, category, filename):
+    """
+    Delete an image file.
+    
+    DELETE /api/images/{category}/{filename}
+    """
+    from .image_manager import ImageManager
+    
+    result = ImageManager.delete_image(category, filename)
+    
+    if result['success']:
+        return Response(result)
+    else:
+        return Response(
+            {'error': result['error']},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(['POST'])
+def set_obs_background(request):
+    """
+    Set an image as OBS scene background.
+    
+    POST /api/obs/set-background
+    
+    Request body:
+        {
+            "category": "background",
+            "filename": "abc123.jpg"
+        }
+    """
+    from .image_manager import ImageManager
+    from .obs_control import OBSController
+    
+    category = request.data.get('category')
+    filename = request.data.get('filename')
+    
+    if not category or not filename:
+        return Response(
+            {'error': 'Missing category or filename'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Get image path
+    image_path = ImageManager.get_image_path(category, filename)
+    
+    if not image_path:
+        return Response(
+            {'error': 'Image not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Set background in OBS
+    obs_controller = OBSController()
+    
+    if not obs_controller.ensure_connected():
+        return Response(
+            {'error': 'OBS not connected'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    
+    try:
+        success = obs_controller.set_scene_background(str(image_path))
+        
+        if success:
+            return Response({
+                'success': True,
+                'message': 'Background set successfully',
+                'image': filename
+            })
+        else:
+            return Response(
+                {'error': 'Failed to set background in OBS'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    except Exception as e:
+        logger.error(f"Error setting OBS background: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+def add_obs_overlay(request):
+    """
+    Add an image overlay to OBS scene.
+    
+    POST /api/obs/add-overlay
+    
+    Request body:
+        {
+            "category": "overlay",
+            "filename": "logo.png",
+            "x": 100,
+            "y": 100,
+            "width": 400,
+            "height": 400
+        }
+    """
+    from .image_manager import ImageManager
+    from .obs_control import OBSController
+    
+    category = request.data.get('category')
+    filename = request.data.get('filename')
+    x = request.data.get('x', 0)
+    y = request.data.get('y', 0)
+    width = request.data.get('width', 400)
+    height = request.data.get('height', 400)
+    
+    if not category or not filename:
+        return Response(
+            {'error': 'Missing category or filename'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Get image path
+    image_path = ImageManager.get_image_path(category, filename)
+    
+    if not image_path:
+        return Response(
+            {'error': 'Image not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Add overlay to OBS
+    obs_controller = OBSController()
+    
+    if not obs_controller.ensure_connected():
+        return Response(
+            {'error': 'OBS not connected'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    
+    try:
+        source_name = obs_controller.add_image_overlay(
+            str(image_path),
+            position=(x, y),
+            size=(width, height)
+        )
+        
+        if source_name:
+            return Response({
+                'success': True,
+                'message': 'Overlay added successfully',
+                'source_name': source_name
+            })
+        else:
+            return Response(
+                {'error': 'Failed to add overlay to OBS'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    except Exception as e:
+        logger.error(f"Error adding OBS overlay: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+def get_recording_status(request):
+    """
+    Get OBS recording status.
+    
+    GET /api/obs/recording-status
+    
+    Returns:
+        {
+            "recording": true/false,
+            "duration_ms": 12345  # If recording
+        }
+    """
+    from .obs_control import OBSController
+    from obswebsocket import requests as obs_requests
+    
+    obs_controller = OBSController()
+    
+    if not obs_controller.ensure_connected():
+        return Response(
+            {'error': 'OBS not connected'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    
+    try:
+        # Get recording status from OBS
+        status_response = obs_controller.client.call(obs_requests.GetRecordStatus())
+        
+        is_recording = status_response.getOutputActive()
+        
+        result = {
+            'recording': is_recording
+        }
+        
+        if is_recording:
+            # Get output duration if recording
+            duration = status_response.getOutputDuration()
+            result['duration_ms'] = int(duration)
+        
+        return Response(result)
+        
+    except Exception as e:
+        logger.error(f"Error getting recording status: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+def toggle_image_favorite(request, category, filename):
+    """
+    Toggle favorite status of an image.
+    
+    POST /api/images/{category}/{filename}/favorite
+    
+    Returns:
+        {
+            "success": true,
+            "action": "added" or "removed",
+            "is_favorite": true/false
+        }
+    """
+    from .favorites import toggle_favorite, is_favorite
+    
+    try:
+        action = toggle_favorite(category, filename)
+        
+        return Response({
+            'success': True,
+            'action': action,
+            'is_favorite': is_favorite(category, filename)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error toggling favorite: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+

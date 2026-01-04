@@ -6,18 +6,10 @@ class ApiConfig(AppConfig):
     name = 'api'
     
     def ready(self):
-        """Initialize TTS engine when Django starts."""
+        """Initialize WebSocket status server for real-time updates."""
         import threading
-        from .tts_engine import TTSEngine
         
-        def init_tts():
-            print("Starting background TTS initialization...")
-            TTSEngine.get_instance()
-            print("Background TTS initialization complete.")
-
-        # Initialize in background thread to not block server startup
-        thread = threading.Thread(target=init_tts, daemon=True)
-        thread.start()
+        print("🚀 Backend starting... (TTS will load on-demand)")
         
         # Start WebSocket Status Server (Port 8001)
         def run_ws_server():
@@ -29,15 +21,20 @@ class ApiConfig(AppConfig):
             
             async def status_handler(websocket):
                 try:
+                    from .tts_engine import TTSEngine
+                    
                     while True:
-                        # Check TTS status
-                        is_ready = TTSEngine.get_instance().initialized if TTSEngine._instance else False
-                        status = "ready" if is_ready else "initializing"
+                        # Check TTS status WITHOUT triggering initialization
+                        if TTSEngine._instance is not None:
+                            is_ready = TTSEngine._instance.initialized
+                            status = "ready" if is_ready else "loading"
+                        else:
+                            status = "ready"  # Backend ready, TTS will load on-demand
                         
                         await websocket.send(json.dumps({
                             "type": "status",
                             "status": status,
-                            "details": "Server is running"
+                            "details": "Server is running (TTS: lazy loading)"
                         }))
                         await asyncio.sleep(1) # Update every second
                 except websockets.exceptions.ConnectionClosed:

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/backend_service.dart';
 import '../models/api_models.dart';
 import '../widgets/status_indicator.dart';
+import '../widgets/video_preview_widget.dart';
+import '../widgets/image_upload_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final BackendService backendService;
@@ -279,6 +281,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ],
+
+            const SizedBox(height: 24),
+
+            // Video Preview Section
+            VideoPreviewWidget(
+              baseUrl: 'http://127.0.0.1:8000/api/stream/preview',
+              isOBSConnected: _systemStatus?.obsConnected ?? false,
+            ),
+
+            const SizedBox(height: 24),
+
+            // Livestream Images Section
+            SizedBox(
+              height: 400,
+              child: ImageUploadSection(
+                backendService: widget.backendService,
+              ),
+            ),
 
             const SizedBox(height: 24),
 

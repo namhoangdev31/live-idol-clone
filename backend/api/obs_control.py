@@ -265,3 +265,121 @@ class OBSController:
         except Exception as e:
             logger.error(f"Failed to launch OBS: {e}")
             return False
+
+    def set_scene_background(self, image_path):
+        """
+        Set an image as the background of the current OBS scene.
+        
+        Args:
+            image_path: Absolute path to the image file
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.ensure_connected():
+            logger.error("OBS not connected")
+            return False
+        
+        source_name = "LiveStreamBackground"
+        scene_name = "LiveIdol"
+        
+        try:
+            # Check if source already exists
+            inputs = self.client.call(requests.GetInputList())
+            input_names = [i['inputName'] for i in inputs.getInputs()]
+            
+            if source_name in input_names:
+                # Update existing source
+                self.client.call(requests.SetInputSettings(
+                    inputName=source_name,
+                    inputSettings={'file': image_path}
+                ))
+                logger.info(f"Updated background image: {image_path}")
+            else:
+                # Create new image source
+                self.client.call(requests.CreateInput(
+                    sceneName=scene_name,
+                    inputName=source_name,
+                    inputKind="image_source",
+                    inputSettings={'file': image_path}
+                ))
+                logger.info(f"Created background image source: {image_path}")
+            
+            # Set to background (bottom of scene)
+            scene_items = self.client.call(requests.GetSceneItemList(sceneName=scene_name))
+            for item in scene_items.getSceneItems():
+                if item['sourceName'] == source_name:
+                    item_id = item['sceneItemId']
+                    # Move to index 0 (bottom layer)
+                    self.client.call(requests.SetSceneItemIndex(
+                        sceneName=scene_name,
+                        sceneItemId=item_id,
+                        sceneItemIndex=0
+                    ))
+                    break
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to set OBS background: {e}")
+            return False
+    
+    def add_image_overlay(self, image_path, position=(0, 0), size=(400, 400)):
+        """
+        Add an image overlay to the OBS scene.
+        
+        Args:
+            image_path: Absolute path to the image file
+            position: Tuple of (x, y) position in pixels
+            size: Tuple of (width, height) in pixels
+            
+        Returns:
+            Source name if successful, None otherwise
+        """
+        if not self.ensure_connected():
+            logger.error("OBS not connected")
+            return None
+        
+        import time
+        source_name = f"Overlay_{int(time.time())}"
+        scene_name = "LiveIdol"
+        
+        try:
+            # Create image source
+            self.client.call(requests.CreateInput(
+                sceneName=scene_name,
+                inputName=source_name,
+                inputKind="image_source",
+                inputSettings={'file': image_path}
+            ))
+            
+            # Get the scene item ID for positioning
+            scene_items = self.client.call(requests.GetSceneItemList(sceneName=scene_name))
+            item_id = None
+            for item in scene_items.getSceneItems():
+                if item['sourceName'] == source_name:
+                    item_id = item['sceneItemId']
+                    break
+            
+            if item_id:
+                # Set position and size
+                transform = {
+                    'positionX': position[0],
+                    'positionY': position[1],
+                    'scaleX': size[0] / 100,  # OBS uses base size scaling
+                    'scaleY': size[1] / 100,
+                }
+                
+                self.client.call(requests.SetSceneItemTransform(
+                    sceneName=scene_name,
+                    sceneItemId=item_id,
+                    sceneItemTransform=transform
+                ))
+            
+            logger.info(f"Added overlay: {source_name} at {position}")
+            return source_name
+            
+        except Exception as e:
+            logger.error(f"Failed to add OBS overlay: {e}")
+            return None
+

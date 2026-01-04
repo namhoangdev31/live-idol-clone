@@ -72,6 +72,16 @@ import sys
 VOICE_PROFILES_DIR = os.path.join(BASE_DIR, 'voice_profiles')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
 
+# Image storage directories
+IMAGES_DIR = os.path.join(BASE_DIR, 'images')
+AVATARS_DIR = os.path.join(IMAGES_DIR, 'avatars')
+BACKGROUNDS_DIR = os.path.join(IMAGES_DIR, 'backgrounds')
+OVERLAYS_DIR = os.path.join(IMAGES_DIR, 'overlays')
+
+# File upload limits
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+
 # Check if frozen (bundled)
 if getattr(sys, 'frozen', False):
     # In production, look for models in {app}/backend/tts_models
@@ -94,6 +104,9 @@ TTS_DEVICE = 'cpu'  # Change to 'cuda' if GPU available
 # Ensure directories exist
 os.makedirs(VOICE_PROFILES_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(AVATARS_DIR, exist_ok=True)
+os.makedirs(BACKGROUNDS_DIR, exist_ok=True)
+os.makedirs(OVERLAYS_DIR, exist_ok=True)
 
 # REST Framework settings
 REST_FRAMEWORK = {

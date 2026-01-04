@@ -10,7 +10,7 @@ class ApiClient {
   final http.Client _client;
 
   ApiClient({this.baseUrl = 'http://127.0.0.1:8000/api', http.Client? client})
-    : _client = client ?? http.Client();
+      : _client = client ?? http.Client();
 
   /// Check backend health
   Future<HealthResponse> checkHealth() async {
@@ -162,6 +162,146 @@ class ApiClient {
       return jsonDecode(response.body);
     } catch (e) {
       return {'status': 'failed', 'error': 'Connection error: $e'};
+    }
+  }
+
+  // =========================================================================
+  // Image Upload & Management Methods
+  // =========================================================================
+
+  /// Upload an image file
+  Future<Map<String, dynamic>> uploadImage(File file, String category) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/images/upload'),
+      );
+
+      request.fields['category'] = category;
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      final streamedResponse =
+          await request.send().timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Upload failed: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Upload error: $e');
+    }
+  }
+
+  /// List images in a category
+  Future<List<Map<String, dynamic>>> listImages(String category) async {
+    try {
+      final response = await _client
+          .get(Uri.parse('$baseUrl/images/$category'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(json['images'] ?? []);
+      } else {
+        throw Exception('Failed to list images');
+      }
+    } catch (e) {
+      throw Exception('List images error: $e');
+    }
+  }
+
+  /// Delete an image
+  Future<bool> deleteImage(String category, String filename) async {
+    try {
+      final response = await _client
+          .delete(Uri.parse('$baseUrl/images/$category/$filename'))
+          .timeout(const Duration(seconds: 5));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      throw Exception('Delete error: $e');
+    }
+  }
+
+  /// Set OBS background image
+  Future<bool> setOBSBackground(String category, String filename) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/obs/set-background'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'category': category,
+              'filename': filename,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      throw Exception('Set background error: $e');
+    }
+  }
+
+  /// Add OBS overlay image
+  Future<String?> addOBSOverlay({
+    required String category,
+    required String filename,
+    int x = 0,
+    int y = 0,
+    int width = 400,
+    int height = 400,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/obs/add-overlay'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'category': category,
+              'filename': filename,
+              'x': x,
+              'y': y,
+              'width': width,
+              'height': height,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return json['source_name'];
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Add overlay error: $e');
+    }
+  }
+
+  /// Generic POST request
+  Future<Map<String, dynamic>> post(
+    String endpoint,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl$endpoint'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'POST request failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('POST error: $e');
     }
   }
 

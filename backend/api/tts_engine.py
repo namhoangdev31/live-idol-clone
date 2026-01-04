@@ -15,27 +15,46 @@ logger = logging.getLogger(__name__)
 
 
 class TTSEngine:
-    """Singleton TTS engine using Coqui TTS XTTS-v2 for voice cloning."""
+    """Singleton TTS engine using Coqui TTS XTTS-v2 for voice cloning with lazy loading."""
     
     _instance = None
+    _lock = None  # Will be initialized at module level
     
     def __init__(self):
-        """Initialize TTS engine."""
+        """Initialize TTS engine structure (without loading model)."""
         self.model = None
         self.initialized = False
         self.device = settings.TTS_DEVICE
         self.output_dir = Path(settings.OUTPUT_DIR)
         self.voice_profiles_dir = Path(settings.VOICE_PROFILES_DIR)
         
-        logger.info(f"Initializing TTS Engine on device: {self.device}")
-        self._load_model()
+        logger.info(f"TTS Engine created (lazy loading enabled for device: {self.device})")
+        # Model will be loaded on first use
     
     @classmethod
     def get_instance(cls):
-        """Get singleton instance."""
+        """Get singleton instance (lazy initialization)."""
         if cls._instance is None:
-            cls._instance = cls()
+            if cls._lock is None:
+                import threading
+                cls._lock = threading.Lock()
+            
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls()
         return cls._instance
+    
+    def ensure_initialized(self):
+        """Ensure TTS model is loaded (called on first use)."""
+        if not self.initialized:
+            if self._lock is None:
+                import threading
+                self._lock = threading.Lock()
+            
+            with self._lock:
+                if not self.initialized:  # Double-check after acquiring lock
+                    logger.info("🎯 First TTS request - loading model now...")
+                    self._load_model()
     
     def _load_model(self):
         """Load Coqui TTS model."""
@@ -105,8 +124,11 @@ class TTSEngine:
         Returns:
             Dictionary with audio_path, duration_ms, and status
         """
+        # Lazy load TTS model on first use
+        self.ensure_initialized()
+        
         if not self.initialized:
-            raise RuntimeError("TTS Engine not initialized")
+            raise RuntimeError("TTS Engine failed to initialize")
         
         try:
             # Get voice profile path
