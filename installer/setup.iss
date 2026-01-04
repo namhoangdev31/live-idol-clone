@@ -92,7 +92,7 @@ Source: "files\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recurses
 
 ; Documentation
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion isreadme
-Source: "..\BUILD.md"; DestDir: "{app}"; Flags: ignoreversion
+; Source: "..\BUILD.md"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Voice Profiles directory
 Source: "..\backend\voice_profiles\default\README.md"; DestDir: "{app}\backend\voice_profiles\default"; Flags: ignoreversion; Components: samples
