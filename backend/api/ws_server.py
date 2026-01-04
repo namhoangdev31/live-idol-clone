@@ -38,14 +38,15 @@ class WebSocketServer:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             
-            start_server = websockets.serve(self._handler, "0.0.0.0", self.port)
-            logger.info(f"WebSocket Server starting on port {self.port}...")
-            
-            self.running = True
-            
+            async def main():
+                async with websockets.serve(self._handler, "0.0.0.0", self.port):
+                    logger.info(f"WebSocket Server running on port {self.port}")
+                    self.running = True
+                    # Keep running forever
+                    await asyncio.Future()
+
             try:
-                self.loop.run_until_complete(start_server)
-                self.loop.run_forever()
+                self.loop.run_until_complete(main())
             except Exception as e:
                 logger.error(f"WebSocket Server crashed: {e}")
             finally:
