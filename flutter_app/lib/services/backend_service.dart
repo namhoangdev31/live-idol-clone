@@ -11,7 +11,7 @@ class BackendService {
   bool _isRunning = false;
 
   BackendService({ApiClient? apiClient})
-    : _apiClient = apiClient ?? ApiClient();
+      : _apiClient = apiClient ?? ApiClient();
 
   bool get isRunning => _isRunning;
 
@@ -75,6 +75,7 @@ class BackendService {
     final candidates = [
       // Production path (installed with Inno Setup)
       path.join(executableDir, 'LiveIdolBackend.exe'),
+      path.join(executableDir, 'backend', 'LiveIdolBackend.exe'),
       // Development path
       path.join(
         executableDir,
