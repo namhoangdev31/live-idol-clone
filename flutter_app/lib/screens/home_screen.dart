@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../services/backend_service.dart';
 import '../models/api_models.dart';
 import '../widgets/status_indicator.dart';
@@ -20,6 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _statusMessage;
   SpeakResponse? _lastResponse;
   SystemStatus? _systemStatus;
+
+  // Lip Sync Settings
+  bool _lipSyncEnabled = true;
+  double _lipSyncSensitivity = 10.0;
+  Timer? _debounceTimer; // For slider debounce
 
   @override
   void initState() {
@@ -160,6 +168,28 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _updateLipSyncSettings() async {
+    // Debounce slider updates
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
+      final success =
+          await widget.backendService.apiClient.updateLipSyncSettings(
+        enabled: _lipSyncEnabled,
+        sensitivity: _lipSyncSensitivity,
+      );
+
+      if (success) {
+        print(
+            'Lip Sync settings updated: $_lipSyncEnabled, $_lipSyncSensitivity');
+      } else {
+        setState(() {
+          _statusMessage = 'Failed to update Lip Sync settings';
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -208,65 +238,117 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 24),
 
-            // Control Buttons (Unity & OBS)
-            Row(
+            // System Control (collapsed by default)
+            ExpansionTile(
+              title: const Text('System Control (Advanced)'),
+              leading: const Icon(Icons.settings_system_daydream),
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _launchUnity,
-                    icon: Icon(
-                      Icons.videogame_asset,
-                      color: (_systemStatus?.unityRunning ?? false)
-                          ? Colors.green
-                          : Colors.purple,
-                    ),
-                    label: Text(
-                      (_systemStatus?.unityRunning ?? false)
-                          ? 'Unity Running'
-                          : 'Launch Unity',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: (_systemStatus?.unityRunning ?? false)
-                          ? Colors.green
-                          : Colors.deepPurple,
-                      side: BorderSide(
-                        color: (_systemStatus?.unityRunning ?? false)
-                            ? Colors.green
-                            : Colors.deepPurple,
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _launchUnity,
+                          icon: Icon(
+                            Icons.videogame_asset,
+                            color: (_systemStatus?.unityRunning ?? false)
+                                ? Colors.green
+                                : Colors.purple,
+                          ),
+                          label: Text(
+                            (_systemStatus?.unityRunning ?? false)
+                                ? 'Unity Running'
+                                : 'Launch Unity',
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: (_systemStatus?.obsConnected ?? false)
-                        ? null
-                        : _launchObs,
-                    icon: Icon(
-                      Icons.camera,
-                      color: (_systemStatus?.obsConnected ?? false)
-                          ? Colors.green
-                          : Colors.orange,
-                    ),
-                    label: Text(
-                      (_systemStatus?.obsConnected ?? false)
-                          ? 'OBS Running'
-                          : 'Launch OBS',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: (_systemStatus?.obsConnected ?? false)
-                          ? Colors.green
-                          : Colors.orange,
-                      side: BorderSide(
-                        color: (_systemStatus?.obsConnected ?? false)
-                            ? Colors.green
-                            : Colors.orange,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: (_systemStatus?.obsConnected ?? false)
+                              ? null
+                              : _launchObs,
+                          icon: Icon(
+                            Icons.camera,
+                            color: (_systemStatus?.obsConnected ?? false)
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                          label: Text(
+                            (_systemStatus?.obsConnected ?? false)
+                                ? 'OBS Running'
+                                : 'Launch OBS',
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Lip Sync Settings
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Lip Sync Settings',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Switch(
+                          value: _lipSyncEnabled,
+                          activeColor: Colors.deepPurple,
+                          onChanged: (val) {
+                            setState(() {
+                              _lipSyncEnabled = val;
+                            });
+                            _updateLipSyncSettings();
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text('Sensitivity: '),
+                        Text(
+                          _lipSyncSensitivity.toStringAsFixed(1),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: _lipSyncSensitivity,
+                      min: 1.0,
+                      max: 50.0,
+                      divisions: 49,
+                      label: _lipSyncSensitivity.round().toString(),
+                      activeColor: Colors.deepPurple,
+                      onChanged: _lipSyncEnabled
+                          ? (val) {
+                              setState(() {
+                                _lipSyncSensitivity = val;
+                              });
+                              _updateLipSyncSettings();
+                            }
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
             ),
 
             if (_systemStatus != null && !_systemStatus!.obsConnected) ...[

@@ -555,3 +555,45 @@ def toggle_image_favorite(request, category, filename):
 
 
 
+
+@api_view(['POST'])
+def update_lipsync_settings(request):
+    """
+    Update Lip Sync settings and broadcast to Unity.
+    
+    POST /api/settings/lipsync
+    
+    Request body:
+        {
+            "enabled": true,
+            "sensitivity": 20.0
+        }
+    """
+    from .ws_server import WebSocketServer
+    
+    enabled = request.data.get('enabled', True)
+    sensitivity = request.data.get('sensitivity', 10.0)
+    
+    try:
+        ws_server = WebSocketServer.get_instance()
+        
+        config_data = {
+            "type": "lipsync_config",
+            "enabled": enabled,
+            "sensitivity": sensitivity
+        }
+        
+        ws_server.broadcast_config(config_data)
+        
+        return Response({
+            'status': 'success', 
+            'message': 'Lip Sync settings updated',
+            'config': config_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating Lip Sync settings: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

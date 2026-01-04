@@ -165,6 +165,30 @@ class ApiClient {
     }
   }
 
+  /// Update Lip Sync Settings
+  Future<bool> updateLipSyncSettings({
+    bool enabled = true,
+    double sensitivity = 10.0,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/settings/lipsync'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'enabled': enabled,
+              'sensitivity': sensitivity,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Update Lip Sync Settings error: $e');
+      return false;
+    }
+  }
+
   // =========================================================================
   // Image Upload & Management Methods
   // =========================================================================

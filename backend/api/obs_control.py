@@ -5,7 +5,8 @@ import psutil
 from pathlib import Path
 from django.conf import settings
 from obswebsocket import obsws, requests
-from obswebsocket.exceptions import OBSWebSocketError
+# from obswebsocket.exceptions import OBSWebSocketError # Removed due to ImportError in v1.0
+
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +66,15 @@ class OBSController:
     def setup_default_scene(self):
         """
         Auto-configure OBS Scene and Sources if missing.
-        Ensures 'LiveIdol' scene and 'LiveIdolAudio' source exist.
+        Ensures 'LiveIdol' scene, 'LiveIdolAudio' source, and 'UnityCapture' source exist.
         """
         if not self.connected:
             return
 
         SCENE_NAME = "LiveIdol"
         AUDIO_SOURCE = "LiveIdolAudio"
+        VIDEO_SOURCE = "UnityCapture"
+        UNITY_WINDOW_NAME = "Live Idol Clone" # The window title of Unity build
 
         try:
             # 1. Check/Create Scene
@@ -82,28 +85,42 @@ class OBSController:
                 logger.info(f"Creating default scene: {SCENE_NAME}")
                 self.client.call(requests.CreateScene(sceneName=SCENE_NAME))
                 
-            # 2. Check/Create Audio Source (ffmpeg_source)
-            # We need to know if the source exists in the current scene
-            # Simplified: Just try to create input, catch error if exists
-            
-            # First, check if input exists globally
+            # 2. Check/Create Audio Source
             inputs = self.client.call(requests.GetInputList())
             input_names = [i['inputName'] for i in inputs.getInputs()]
             
             if AUDIO_SOURCE not in input_names:
                 logger.info(f"Creating audio source: {AUDIO_SOURCE}")
-                # Create ffmpeg_source
-                # Note: We need a dummy file or just leave it empty initially if allowed
-                # Using a placeholder settings dict
                 self.client.call(requests.CreateInput(
                     sceneName=SCENE_NAME,
                     inputName=AUDIO_SOURCE,
                     inputKind="ffmpeg_source",
                     inputSettings={'is_local_file': True}
                 ))
-            else:
-                # Ensure it is in the target scene (optional, advanced)
-                pass
+
+            # 3. Check/Create Video Source (Window Capture)
+            if VIDEO_SOURCE not in input_names:
+                logger.info(f"Creating video source: {VIDEO_SOURCE}")
+                self.client.call(requests.CreateInput(
+                    sceneName=SCENE_NAME,
+                    inputName=VIDEO_SOURCE,
+                    inputKind="window_capture",
+                    inputSettings={
+                        'window': f'{UNITY_WINDOW_NAME}:UnityWndClass:{UNITY_WINDOW_NAME}.exe', # Syntax varies by OS/OBS version
+                        'method': 2, # Windows Graphics Capture (usually best for modern apps)
+                        'priority': 1 # Match title, otherwise find window of same executable
+                    }
+                ))
+            
+            # 4. Ensure items are in Scene and Ordered
+            scene_items = self.client.call(requests.GetSceneItemList(sceneName=SCENE_NAME))
+            current_items = [i['sourceName'] for i in scene_items.getSceneItems()]
+            
+            # Add if missing (Input exists but not within this scene - rare but possible)
+            if VIDEO_SOURCE not in current_items:
+                self.client.call(requests.CreateSceneItem(sceneName=SCENE_NAME, sourceName=VIDEO_SOURCE))
+                
+            # Ensure Video is behind overlays but visible (logic can be complex, just ensuring existence for now)
 
         except Exception as e:
             logger.warning(f"Auto-config failed (non-critical): {e}")
@@ -135,10 +152,10 @@ class OBSController:
             logger.info(f"OBS playing audio: {file_path}")
             return {"status": "success", "message": f"Playing {file_path}"}
 
-        except OBSWebSocketError as e:
+        except Exception as e:
             logger.error(f"OBS WebSocket Error: {e}")
             return {"status": "error", "message": str(e)}
-        except Exception as e:
+        except Exception as e: # This is now redundant but keeps structure similar
             logger.error(f"OBS General Error: {e}")
             return {"status": "error", "message": str(e)}
 

@@ -12,6 +12,7 @@ public class LipSyncProcessor : MonoBehaviour
     public AudioSource audioSource;
     
     [Header("Settings")]
+    public bool isEnabled = true;
     [Range(1f, 100f)] public float sensitivity = 10.0f;
     [Range(0f, 1f)] public float smoothTime = 0.1f;
     public float threshold = 0.01f;
@@ -25,6 +26,13 @@ public class LipSyncProcessor : MonoBehaviour
     
     // Velocity references for SmoothDamp
     private float velA, velI, velU, velE, velO;
+
+    public void UpdateSettings(bool enabled, float newSensitivity)
+    {
+        isEnabled = enabled;
+        sensitivity = newSensitivity;
+        Debug.Log($"[LipSync] Settings Updated: Enabled={isEnabled}, Sensitivity={sensitivity}");
+    }
 
     void Start()
     {
@@ -41,6 +49,17 @@ public class LipSyncProcessor : MonoBehaviour
     void Update()
     {
         if (audioSource == null || blendShapeProxy == null) return;
+        
+        if (!isEnabled)
+        {
+            // Reset if disabled
+            blendShapeProxy.ImmediatelySetValue(BlendShapePreset.A, 0);
+            blendShapeProxy.ImmediatelySetValue(BlendShapePreset.I, 0);
+            blendShapeProxy.ImmediatelySetValue(BlendShapePreset.U, 0);
+            blendShapeProxy.ImmediatelySetValue(BlendShapePreset.E, 0);
+            blendShapeProxy.ImmediatelySetValue(BlendShapePreset.O, 0);
+            return;
+        }
 
         // 1. Get Spectrum Data (FFT)
         // Check if playing to avoid noise

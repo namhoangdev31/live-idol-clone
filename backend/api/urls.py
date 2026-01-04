@@ -10,6 +10,8 @@ urlpatterns = [
     path('status', views.system_status, name='status'),
     path('speak', views.speak, name='speak'),
     path('voice-profiles', views.list_voice_profiles, name='voice_profiles'),
+    path('settings/lipsync', views.update_lipsync_settings, name='lipsync_settings'),
+
     # Video streaming endpoints
     path('stream/preview', obs_stream.stream_preview, name='stream_preview'),
     path('stream/snapshot', obs_stream.get_preview_snapshot, name='stream_snapshot'),

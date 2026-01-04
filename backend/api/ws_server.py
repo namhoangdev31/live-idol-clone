@@ -4,6 +4,7 @@ import json
 import logging
 import threading
 import base64
+import platform
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,9 @@ class WebSocketServer:
             return
 
         def run_loop():
+            if platform.system() == 'Windows':
+                asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             
@@ -126,3 +130,26 @@ class WebSocketServer:
                     pass
         
         asyncio.run_coroutine_threadsafe(_broadcast(), self.loop)
+
+    def broadcast_config(self, config_data: dict):
+        """Broadcast configuration/settings to all connected clients."""
+        if not self.clients:
+            return
+
+        # Ensure type is set
+        if 'type' not in config_data:
+            config_data['type'] = 'config'
+
+        message = json.dumps(config_data)
+
+        async def _broadcast():
+            for client in list(self.clients):
+                try:
+                    await client.send(message)
+                except websockets.exceptions.ConnectionClosed:
+                    self.clients.discard(client)
+                except Exception as e:
+                    logger.error(f"Error broadcasting config: {e}")
+
+        if self.loop and self.running:
+           asyncio.run_coroutine_threadsafe(_broadcast(), self.loop)
