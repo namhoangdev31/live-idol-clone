@@ -38,8 +38,8 @@ LZMAUseSeparateProcess=yes
 LZMANumBlockThreads=2
 
 ; Architecture
-ArchitecturesInstallIn64BitMode=x64
-ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed=x64compatible
 
 ; Privileges
 PrivilegesRequired=admin
