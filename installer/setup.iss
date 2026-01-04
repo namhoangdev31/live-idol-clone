@@ -85,7 +85,7 @@ Source: "files\backend\LiveIdolBackend.exe"; DestDir: "{app}\backend"; Flags: ig
 Source: "..\unity_vrm_scripts\build\*"; DestDir: "{app}\backend\renderer"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: unity
 
 ; OBS Studio Portable
-Source: "files\obs-studio-portable\*"; DestDir: "{app}\backend\obs-studio-portable"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: app
+Source: "..\backend\obs-studio-portable\*"; DestDir: "{app}\backend\obs-studio-portable"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: app
 
 ; Assets and Samples
 Source: "files\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: samples
