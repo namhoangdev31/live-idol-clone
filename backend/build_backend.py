@@ -36,6 +36,7 @@ hidden_imports = [
     'pydub',
     'numpy',
     'scipy',
+    'websockets',
 ]
 
 # Build arguments
