@@ -31,4 +31,26 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        import time
+        
+        error_msg = traceback.format_exc()
+        print("\n" + "="*50)
+        print("CRITICAL STARTUP ERROR")
+        print("="*50)
+        print(error_msg)
+        print("="*50)
+        
+        # Write to log file
+        try:
+            with open("backend_crash_log.txt", "w") as f:
+                f.write(error_msg)
+            print("Error details written to backend_crash_log.txt")
+        except:
+            print("Could not write log file")
+            
+        print("\nPress Enter to exit...")
+        input()
