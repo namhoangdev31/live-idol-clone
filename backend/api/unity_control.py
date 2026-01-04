@@ -37,10 +37,21 @@ class UnityController:
         if exe_path.exists():
             return exe_path
             
-        # Fallback for dev environment (assuming standard layout)
-        dev_path = settings.BASE_DIR.parent.parent / 'unity_vrm' / 'Build' / self.PROCESS_NAME
+        # Fallback 1: User-specified path (live-idol-clone/build_output/unity/VRMRenderer.exe)
+        # settings.BASE_DIR is 'backend', so parent is project root
+        user_specified_path = settings.BASE_DIR.parent / 'build_output' / 'unity' / self.PROCESS_NAME
+        if user_specified_path.exists():
+            return user_specified_path
+
+        # Fallback 2: Dev environment (unity_vrm/Build)
+        dev_path = settings.BASE_DIR.parent / 'unity_vrm' / 'Build' / self.PROCESS_NAME
         if dev_path.exists():
             return dev_path
+
+        # Fallback 3: Old build structure
+        build_output_path = settings.BASE_DIR.parent / 'build_output' / 'backend' / 'renderer' / self.PROCESS_NAME
+        if build_output_path.exists():
+            return build_output_path
             
         return None
 
@@ -54,14 +65,14 @@ class UnityController:
 
     def launch(self):
         """Launch the Unity Renderer process."""
-        if self.is_running():
-            logger.info("Unity Renderer is already running.")
-            return True
-
         exe_path = self.get_renderer_path()
         if not exe_path or not exe_path.exists():
             logger.error(f"Unity Renderer executable not found at: {exe_path}")
             return False
+
+        if self.is_running():
+            logger.info("Unity Renderer is already running.")
+            return True
 
         try:
             # Launch detached process
