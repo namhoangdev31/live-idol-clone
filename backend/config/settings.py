@@ -66,9 +66,29 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom settings
+import sys
+
+# Custom settings
 VOICE_PROFILES_DIR = os.path.join(BASE_DIR, 'voice_profiles')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
-TTS_MODEL = 'tts_models/multilingual/multi-dataset/xtts_v2'
+
+# Check if frozen (bundled)
+if getattr(sys, 'frozen', False):
+    # In production, look for models in {app}/backend/tts_models
+    BASE_EXEC_DIR = Path(sys.executable).parent
+    TTS_MODELS_DIR = BASE_EXEC_DIR / 'tts_models'
+    
+    # We need to point to the specific version folder inside tts_models
+    # For simplicity, we'll assume the build process organizes it correctly
+    # If using direct path, Coqui TTS needs full path to model.pth and config.json
+    # OR we set TTS_HOME env var.
+    
+    # Let's set TTS_HOME to our bundled dir so TTS finds it naturally
+    os.environ['TTS_HOME'] = str(TTS_MODELS_DIR)
+    TTS_MODEL = 'tts_models/multilingual/multi-dataset/xtts_v2' # Name logic remains, but cache is local
+else:
+    TTS_MODEL = 'tts_models/multilingual/multi-dataset/xtts_v2'
+
 TTS_DEVICE = 'cpu'  # Change to 'cuda' if GPU available
 
 # Ensure directories exist

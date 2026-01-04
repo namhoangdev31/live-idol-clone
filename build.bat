@@ -144,6 +144,8 @@ pip install -q -r requirements.txt
 pip install -q pyinstaller
 
 echo Downloading TTS models...
+set "TTS_HOME=%PROJECT_ROOT%\backend\tts_cache"
+if not exist "%TTS_HOME%" mkdir "%TTS_HOME%"
 python -c "from TTS.api import TTS; TTS(model_name='tts_models/multilingual/multi-dataset/xtts_v2')" 2>nul || echo Model download will retry during build
 
 echo Building executable...
@@ -153,6 +155,9 @@ if exist "dist\LiveIdolBackend.exe" (
     echo [OK] Backend built successfully!
     if not exist "%BUILD_OUTPUT%\backend" mkdir "%BUILD_OUTPUT%\backend"
     xcopy /E /I /Y /Q dist "%BUILD_OUTPUT%\backend"
+    
+    echo Copying bundled TTS models...
+    if exist "%TTS_HOME%" xcopy /E /I /Y /Q "%TTS_HOME%" "%BUILD_OUTPUT%\backend\tts_models"
 ) else (
     echo [FAIL] Backend build failed
     cd "%PROJECT_ROOT%"
