@@ -166,11 +166,27 @@ class TTSEngine:
             )
             
             # TRIGGER UNITY LIPSYNC (Simple Contract)
-            from .unity_control import UnityController
-            UnityController().send_viseme({
-                "event": "speech_start",
-                "duration_ms": duration_ms
-            })
+            # from .unity_control import UnityController
+            # UnityController().send_viseme({
+            #     "event": "speech_start",
+            #     "duration_ms": duration_ms
+            # })
+
+            # BROADCAST AUDIO TO UNITY VIA WEBSOCKET
+            try:
+                from .ws_server import WebSocketServer
+                with open(str(output_path), "rb") as f:
+                    audio_data = f.read()
+                    # Skip WAV header (44 bytes) to get raw PCM if needed, 
+                    # but Unity's audio handler might prefer the full wav or raw pcm.
+                    # For simplicity, let's send the WHOLE file and let Unity decie,
+                    # OR ideally send raw PCM. 
+                    # Let's send the whole WAV file bytes for now, 
+                    # assuming the client can parse WAV or we strip header there.
+                    WebSocketServer.get_instance().broadcast_audio(audio_data)
+                    logger.info("Audio broadcasted via WebSocket")
+            except Exception as e:
+                logger.error(f"Failed to broadcast audio: {e}")
 
             # TRIGGER OBS PLAYBACK
             from .obs_control import OBSController

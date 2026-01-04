@@ -6,52 +6,43 @@ class ApiConfig(AppConfig):
     name = 'api'
     
     def ready(self):
-        """Initialize WebSocket status server for real-time updates."""
+        """Initialize WebSocket server for real-time updates and audio streaming."""
         import threading
+        from .ws_server import WebSocketServer
         
         print("🚀 Backend starting... (TTS will load on-demand)")
         
-        # Start WebSocket Status Server (Port 8001)
-        def run_ws_server():
-            import asyncio
-            import websockets
+        # Start the centralized WebSocket Server (Port 8001)
+        # This handles both status updates and audio streaming
+        ws_server = WebSocketServer.get_instance()
+        ws_server.start()
+        
+        # We can still send periodic status updates if needed, 
+        # but let's keep it simple for now or move that logic elsewhere if unrelated to core function.
+        # For now, let's spawn a separate status updater thread if we really need the "loading/ready" status
+        # that was there before, but integrating it into the WS server logic is better.
+        
+        def run_status_updater():
+            import time
             import json
+            from .tts_engine import TTSEngine
             
-            print("Starting WebSocket Status Server on port 8001...")
-            
-            async def status_handler(websocket):
-                try:
-                    from .tts_engine import TTSEngine
+            while True:
+                time.sleep(1)
+                if WebSocketServer.get_instance().clients:
+                    # Check TTS status
+                    if TTSEngine._instance is not None:
+                        is_ready = TTSEngine._instance.initialized
+                        status = "ready" if is_ready else "loading"
+                    else:
+                        status = "ready"
                     
-                    while True:
-                        # Check TTS status WITHOUT triggering initialization
-                        if TTSEngine._instance is not None:
-                            is_ready = TTSEngine._instance.initialized
-                            status = "ready" if is_ready else "loading"
-                        else:
-                            status = "ready"  # Backend ready, TTS will load on-demand
-                        
-                        await websocket.send(json.dumps({
-                            "type": "status",
-                            "status": status,
-                            "details": "Server is running (TTS: lazy loading)"
-                        }))
-                        await asyncio.sleep(1) # Update every second
-                except websockets.exceptions.ConnectionClosed:
-                    pass
-                except Exception as e:
-                    print(f"WS Error: {e}")
+                    WebSocketServer.get_instance().broadcast_viseme({
+                        "type": "status",
+                        "status": status,
+                        "details": "Server is running (TTS: lazy loading)"
+                    })
 
-            async def main():
-                async with websockets.serve(status_handler, "0.0.0.0", 8001):
-                    await asyncio.Future()  # run forever
+        status_thread = threading.Thread(target=run_status_updater, daemon=True)
+        status_thread.start()
 
-            try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(main())
-            except Exception as e:
-                print(f"Failed to start WS Server: {e}")
-
-        ws_thread = threading.Thread(target=run_ws_server, daemon=True)
-        ws_thread.start()
