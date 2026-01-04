@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: live_idol_backend
@@ -14,13 +14,13 @@ services:
       - ./backend/voice_profiles:/app/voice_profiles
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
     # For Mac/CPU, the 'deploy' section is ignored or needs removal if it causes errors on non-NVIDIA hosts.
     # To support both, we usually leave it, but Docker on Mac might warn.
     # A better approach for dev is strict CPU/MPS usage in code.

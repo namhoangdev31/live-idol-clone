@@ -21,6 +21,11 @@ RUN apt-get update && apt-get install -y \
     git \
     portaudio19-dev \
     libsndfile1 \
+    curl \
+    cargo \
+    rustc \
+    pkg-config \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
