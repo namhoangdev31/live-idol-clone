@@ -1,8 +1,39 @@
 import torch
+
+# Patch for 'accelerate' library checking torch.xpu which might be missing
+if not hasattr(torch, 'xpu'):
+    class MockXPU:
+        @staticmethod
+        def is_available():
+            return False
+        @staticmethod
+        def empty_cache():
+            pass
+        @staticmethod
+        def device_count():
+            return 0
+        @staticmethod
+        def get_device_name(device=None):
+            return "MockXPU"
+        @staticmethod
+        def current_device():
+            return 0
+        @staticmethod
+        def manual_seed(seed):
+            pass
+        @staticmethod
+        def seed():
+            pass
+        @staticmethod
+        def synchronize():
+            pass
+    torch.xpu = MockXPU
 import logging
 import os
 from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
 from django.conf import settings
+
+
 
 logger = logging.getLogger(__name__)
 

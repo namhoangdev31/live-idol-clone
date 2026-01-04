@@ -32,7 +32,7 @@ def main():
         print(f"Warning: Migration failed: {e}")
     
     # Run server on port 8000
-    sys.argv = ['manage.py', 'runserver', '127.0.0.1:8000', '--noreload']
+    sys.argv = ['manage.py', 'runserver', '0.0.0.0:8000', '--noreload']
     
     try:
         execute_from_command_line(sys.argv)

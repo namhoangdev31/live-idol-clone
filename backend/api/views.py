@@ -341,7 +341,17 @@ def toggle_image_favorite(request, category, filename):
 
 
 
-# LipSync settings removed
+# LipSync settings
+@api_view(['POST'])
+def update_lipsync_settings(request):
+    """
+    Update LipSync settings.
+    
+    POST /api/settings/lipsync
+    """
+    # Placeholder for actual settings update logic
+    # In a real implementation, this would update a configuration file or database
+    return Response({'status': 'updated', 'settings': request.data})
 
 @api_view(['POST'])
 def generate_scene(request):

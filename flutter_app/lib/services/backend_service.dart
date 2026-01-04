@@ -25,13 +25,30 @@ class BackendService {
       return true;
     }
 
+    // First, check if backend is already running (e.g., in Docker or separate terminal)
+    try {
+      final isHealthy = await _checkBackendHealth();
+      if (isHealthy) {
+        print('Backend found running externally (Docker/Dev). Connecting...');
+        _isRunning = true;
+        _startHealthCheckTimer();
+        return true;
+      }
+    } catch (e) {
+      print('External backend check failed: $e');
+    }
+
     try {
       // Get the backend executable path
       final backendPath = _getBackendExecutablePath();
 
       if (backendPath == null || !File(backendPath).existsSync()) {
         print('Backend executable not found at: $backendPath');
-        return false;
+        // If we can't find the executable, we still start the health check timer
+        // in case the user starts the backend manually later (Dev mode)
+        print('Assuming Dev Mode: Waiting for manual backend start...');
+        _startHealthCheckTimer();
+        return true;
       }
 
       print('Starting backend: $backendPath');

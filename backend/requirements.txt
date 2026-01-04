@@ -2,19 +2,19 @@ Django==4.2.7
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
 TTS==0.22.0
-torch==2.1.0
-torchaudio==2.1.0
+torch==2.3.1
+torchaudio==2.3.1
 soundfile==0.12.1
 pydub==0.25.1
 numpy
 scipy
-transformers==4.36.2
+transformers==4.41.2
 # pyaudio==0.2.14  # Removed for Docker/Server compatibility
 obs-websocket-py==1.0
 packaging==23.1
 diffusers>=0.25.0
 accelerate>=0.26.0
-transformers>=4.36.2
+
 insightface>=0.7.3
 onnxruntime>=1.16.0
 opencv-python-headless>=4.8.0
