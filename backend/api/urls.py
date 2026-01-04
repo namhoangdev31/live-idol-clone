@@ -12,6 +12,11 @@ urlpatterns = [
     path('voice-profiles', views.list_voice_profiles, name='voice_profiles'),
     path('settings/lipsync', views.update_lipsync_settings, name='lipsync_settings'),
 
+    # Control endpoints
+    path('unity/launch', views.launch_unity, name='launch_unity'),
+    path('obs/launch', views.launch_obs, name='launch_obs'),
+    path('obs/connect', views.connect_obs, name='connect_obs'),
+
     # Video streaming endpoints
     path('stream/preview', obs_stream.stream_preview, name='stream_preview'),
     path('stream/snapshot', obs_stream.get_preview_snapshot, name='stream_snapshot'),
