@@ -250,31 +250,6 @@ class _ImageUploadSectionState extends State<ImageUploadSection>
     }
   }
 
-  Future<void> _setAsBackground(String filename) async {
-    try {
-      await widget.backendService.apiClient.setOBSBackground(
-        _selectedCategory,
-        filename,
-      );
-
-      setState(() {
-        _uploadMessage = 'Background set successfully!';
-      });
-
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _uploadMessage = null;
-          });
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _uploadMessage = 'Failed to set background: $e';
-      });
-    }
-  }
-
   Future<void> _deleteImage(String filename) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -680,15 +655,7 @@ class _ImageUploadSectionState extends State<ImageUploadSection>
                                 constraints: const BoxConstraints(),
                               ),
                               const SizedBox(width: 4),
-                              if (_selectedCategory == 'background')
-                                IconButton(
-                                  icon: const Icon(Icons.wallpaper, size: 16),
-                                  onPressed: () => _setAsBackground(filename),
-                                  tooltip: 'Set as Background',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                              const SizedBox(width: 4),
+
                               IconButton(
                                 icon: const Icon(Icons.delete, size: 16),
                                 onPressed: () => _deleteImage(filename),

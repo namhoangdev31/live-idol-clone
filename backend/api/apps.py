@@ -17,32 +17,6 @@ class ApiConfig(AppConfig):
         ws_server = WebSocketServer.get_instance()
         ws_server.start()
         
-        # We can still send periodic status updates if needed, 
-        # but let's keep it simple for now or move that logic elsewhere if unrelated to core function.
-        # For now, let's spawn a separate status updater thread if we really need the "loading/ready" status
-        # that was there before, but integrating it into the WS server logic is better.
-        
-        def run_status_updater():
-            import time
-            import json
-            from .tts_engine import TTSEngine
-            
-            while True:
-                time.sleep(1)
-                if WebSocketServer.get_instance().clients:
-                    # Check TTS status
-                    if TTSEngine._instance is not None:
-                        is_ready = TTSEngine._instance.initialized
-                        status = "ready" if is_ready else "loading"
-                    else:
-                        status = "ready"
-                    
-                    WebSocketServer.get_instance().broadcast_viseme({
-                        "type": "status",
-                        "status": status,
-                        "details": "Server is running (TTS: lazy loading)"
-                    })
+        # Status updater thread removed for simplified architecture
 
-        status_thread = threading.Thread(target=run_status_updater, daemon=True)
-        status_thread.start()
 

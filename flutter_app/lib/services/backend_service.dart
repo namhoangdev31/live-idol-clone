@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
 import 'package:path/path.dart' as path;
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'api_client.dart';
 
 /// Service for managing the Django backend lifecycle
@@ -12,8 +10,6 @@ class BackendService {
   Timer? _healthCheckTimer;
   bool _isRunning = false;
 
-  // WebSocket Status
-  WebSocketChannel? _statusChannel;
   final _statusController = StreamController<String>.broadcast();
   Stream<String> get statusStream => _statusController.stream;
 
@@ -21,54 +17,6 @@ class BackendService {
       : _apiClient = apiClient ?? ApiClient();
 
   bool get isRunning => _isRunning;
-
-  /// Connect to WebSocket Status Server
-  void _connectStatusWebSocket() {
-    try {
-      print('Connecting to Status WebSocket...');
-      _statusChannel = WebSocketChannel.connect(
-        Uri.parse('ws://127.0.0.1:8001'),
-      );
-
-      _statusChannel!.stream.listen(
-        (message) {
-          try {
-            final data = jsonDecode(message);
-            if (data['type'] == 'status') {
-              final status = data['status']; // 'initializing' or 'ready'
-              _statusController.add(status);
-              if (status == 'ready') {
-                _isRunning = true;
-              }
-            }
-          } catch (e) {
-            print('WS Parse Error: $e');
-          }
-        },
-        onError: (error) {
-          print('WS Error: $error');
-          _statusController.add('disconnected');
-          _retryWebSocket();
-        },
-        onDone: () {
-          print('WS Closed');
-          _statusController.add('disconnected');
-          _retryWebSocket();
-        },
-      );
-    } catch (e) {
-      print('WS Connect Failed: $e');
-      _retryWebSocket();
-    }
-  }
-
-  void _retryWebSocket() {
-    Future.delayed(const Duration(seconds: 2), () {
-      if (_isRunning || _backendProcess != null) {
-        _connectStatusWebSocket();
-      }
-    });
-  }
 
   /// Start the Django backend process
   Future<bool> start() async {
@@ -97,10 +45,7 @@ class BackendService {
 
       print('Backend process started with PID: ${_backendProcess?.pid}');
 
-      // Start WebSocket connection attempts immediately
-      _connectStatusWebSocket();
-
-      // Legacy Polling Fallback (Keep for HTTP health)
+      // Start Health Check Timer
       _startHealthCheckTimer();
 
       return true;
@@ -188,7 +133,6 @@ class BackendService {
   Future<void> stop() async {
     print('Stopping backend...');
     _healthCheckTimer?.cancel();
-    _statusChannel?.sink.close();
     _statusController.close();
     _backendProcess?.kill();
     _isRunning = false;

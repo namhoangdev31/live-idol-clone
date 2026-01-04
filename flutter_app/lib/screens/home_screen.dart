@@ -1,12 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
+import 'package:video_player/video_player.dart';
 import '../services/backend_service.dart';
-import '../models/api_models.dart';
-import '../widgets/status_indicator.dart';
-import '../widgets/video_preview_widget.dart';
-import '../widgets/image_upload_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final BackendService backendService;
@@ -18,540 +13,246 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _textController = TextEditingController();
-  bool _isGenerating = false;
-  String? _statusMessage;
-  SpeakResponse? _lastResponse;
-  SystemStatus? _systemStatus;
+  // Video Player
+  VideoPlayerController? _videoController;
+  bool _isVideoInitialized = false;
 
-  // Lip Sync Settings
-  bool _lipSyncEnabled = true;
-  double _lipSyncSensitivity = 10.0;
-  Timer? _debounceTimer; // For slider debounce
+  // State
+  bool _isGenerating = false;
+  String _statusMessage = 'Ready';
+
+  // Inputs
+  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _promptController = TextEditingController();
+
+  // Selection
 
   @override
   void initState() {
     super.initState();
-    _loadSystemStatus();
+    _loadInitialState();
   }
 
-  Future<void> _loadSystemStatus() async {
+  Future<void> _loadInitialState() async {
+    // Check backend status
     try {
-      final status = await widget.backendService.apiClient.getStatus();
-      setState(() {
-        _systemStatus = status;
-      });
-
-      // Auto-launch logic if backend is ready but services are down
-      // Use a flag to ensure we only try auto-launch once per session if needed
-      if (status.ttsInitialized) {
-        // Auto-launch Unity if not running
-        if (!status.unityRunning) {
-          _launchUnity();
-        }
-
-        // Auto-launch OBS if not connected and we haven't tried connecting yet
-        // Note: OBS launch check is tricky as we rely on WebSocket connection status
-        // Check local variable first to avoid loops
-        if (!status.obsConnected) {
-          // We'll rely on user for OBS for now to avoid loops, or just try once
-          // Un-comment below to auto-launch OBS
-          // _launchObs();
-        }
-      }
+      await widget.backendService.apiClient.checkHealth();
+      // Load default idle if available?
+      // For now just wait for user action
     } catch (e) {
-      print('Failed to load system status: $e');
+      setState(() => _statusMessage = "Backend not ready: $e");
     }
   }
 
-  Future<void> _onSpeak() async {
-    final text = _textController.text.trim();
+  /*
+  Future<void> _initializeVideo(String url) async {
+    // If running on emulator/simulator, 127.0.0.1 refers to the device itself.
+    // Use 10.0.2.2 for Android Emulator to reach host localhost.
+    // But assuming Desktop (Mac) build:
+    final uri =
+        Uri.parse(url.startsWith('http') ? url : 'http://127.0.0.1:8000$url');
 
-    if (text.isEmpty) {
-      setState(() {
-        _statusMessage = 'Please enter some text';
-      });
-      return;
+    final oldController = _videoController;
+
+    final controller = VideoPlayerController.networkUrl(uri);
+    await controller.initialize();
+    controller.setLooping(true); // Loop by default (essential for Idle)
+    await controller.play();
+
+    setState(() {
+      _videoController = controller;
+      _isVideoInitialized = true;
+    });
+
+    if (oldController != null) {
+      await oldController.dispose();
     }
+  }
+  */
+
+  Future<void> _generateScene() async {
+    if (_promptController.text.isEmpty) return;
 
     setState(() {
       _isGenerating = true;
-      _statusMessage = 'Generating speech...';
-      _lastResponse = null;
+      _statusMessage = "Generating Scene...";
     });
 
     try {
-      final response = await widget.backendService.apiClient.speak(
-        text: text,
-        voiceProfile: 'default',
-        language: 'en',
-      );
-
-      setState(() {
-        _isGenerating = false;
-        _lastResponse = response;
-
-        if (response.isSuccess) {
-          _statusMessage =
-              'Speech generated successfully! Duration: ${response.durationMs}ms';
-        } else {
-          _statusMessage = 'Error: ${response.error ?? "Unknown error"}';
-        }
-      });
+      final result = await widget.backendService.apiClient
+          .generateScene(_promptController.text);
+      // Result contains image_path
+      // Ideally we display it or auto-set it as background?
+      // For now, let's just log it.
+      setState(() => _statusMessage = "Scene Generated: ${result['filename']}");
     } catch (e) {
-      setState(() {
-        _isGenerating = false;
-        _statusMessage = 'Error: $e';
-      });
+      setState(() => _statusMessage = "Error: $e");
+    } finally {
+      setState(() => _isGenerating = false);
     }
   }
 
-  Future<void> _launchUnity() async {
-    setState(() {
-      _statusMessage = 'Launching Unity Renderer...';
-    });
-    final result = await widget.backendService.apiClient.launchUnity();
-    if (result['status'] == 'launched' ||
-        result['status'] == 'already_running') {
-      setState(() {
-        _statusMessage = result['message'];
-      });
-      _loadSystemStatus();
-    } else {
-      setState(() {
-        _statusMessage = 'Error launching Unity: ${result['error']}';
-      });
-    }
-  }
+  /*
+  Future<void> _generateIdle() async {
+    // Needs an image path.
+    // For testing, let's pick a hardcoded one or let user upload first?
+    // We can use the 'selected' image if we had an image picker.
+    // Let's assume user uploaded an image via the legacy ImageUpload (which we kept).
+    // We need to LIST images to pick one.
 
-  Future<void> _launchObs() async {
-    setState(() {
-      _statusMessage = 'Launching OBS Studio...';
-    });
-    final result = await widget.backendService.apiClient.launchObs();
-    if (result['status'] == 'launched' ||
-        result['status'] == 'already_running') {
-      setState(() {
-        _statusMessage = result['message'];
-      });
-      // Try to connect to OBS WebSocket after a short delay
-      await Future.delayed(const Duration(seconds: 5));
-      _connectObs();
-    } else {
-      setState(() {
-        _statusMessage = 'Error launching OBS: ${result['error']}';
-      });
-    }
-  }
-
-  Future<void> _connectObs() async {
-    setState(() {
-      _statusMessage = 'Connecting to OBS...';
-    });
-
+    // Quick Hack: Fetch list and pick first 'avatar'
     try {
-      final success = await widget.backendService.apiClient.connectObs();
-      if (success) {
-        setState(() {
-          _statusMessage = 'Connected to OBS!';
-        });
-        _loadSystemStatus(); // Refresh status
+      final images = await widget.backendService.apiClient.listImages('avatar');
+      if (images.isNotEmpty) {
+        final filename = images.first['filename'];
+        // Full path is needed by backend?
+        // Backend listImages returns metadata. video_engine needs absolute path.
+        // We construct it or backend handles relative?
+        // Backend video_engine.generate_idle expects absolute path usually.
+        // But let's assume backend api list returns absolute or we reconstruct.
+        // Actually backend listImages just returns dict.
+        // Let's rely on backend solving path if we send filename or fix it later.
+        // Wait, generate_idle takes `image_path`.
+
+        // Let's just create a mock "path" assuming standard structure
+        // /app/static/images/avatar/...
+        // On Backend: MEDIA_ROOT/avatar/...
+
+        // Simplification: Just ask Backend to "Use Default Avatar" if path missing?
+        // Or prompt user "Upload Avatar First".
+
+        setState(() => _statusMessage = "Generating Idle for $filename...");
+        // We need full path.
+        // Let's assume we pass the filename and backend handles lookup?
+        // API `generate_idle` takes `image_path`.
+        // We should update API to accept simple filename too?
+        // Or just use the 'ImageManager' on backend to resolve.
+        // I'll send the relative path and hope backend handles it or I fix backend.
+        // Actually, I'll pass "/app/generated_images/avatar/$filename" (Docker path).
+        // This is risky.
+
+        // Better: Update `generate_idle` to accept `image_id` or `filename` + `category`.
+        // But for now, let's try to send a path we think works.
       } else {
-        setState(() {
-          _statusMessage = 'Failed to connect to OBS. Is it running?';
-        });
+        setState(() => _statusMessage = "No avatars found. Upload one!");
       }
     } catch (e) {
-      setState(() {
-        _statusMessage = 'Error connecting to OBS: $e';
-      });
+      setState(() => _statusMessage = "Error listing images: $e");
     }
   }
+  */
 
-  Future<void> _updateLipSyncSettings() async {
-    // Debounce slider updates
-    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
-      final success =
-          await widget.backendService.apiClient.updateLipSyncSettings(
-        enabled: _lipSyncEnabled,
-        sensitivity: _lipSyncSensitivity,
-      );
-
-      if (success) {
-        print(
-            'Lip Sync settings updated: $_lipSyncEnabled, $_lipSyncSensitivity');
-      } else {
-        setState(() {
-          _statusMessage = 'Failed to update Lip Sync settings';
-        });
-      }
-    });
+  Future<void> _processComment() async {
+    if (_commentController.text.isEmpty) return;
+    // Similar logic: needs image_path.
+    // Need a robust way to select current avatar.
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Live Idol Clone'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Status Indicators
-            Row(
-              children: [
-                Expanded(
-                  child: StatusIndicator(
-                    label: 'Backend',
-                    isActive: widget.backendService.isRunning,
-                    message: widget.backendService.isRunning
-                        ? 'Running on port 8000'
-                        : 'Not running',
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: StatusIndicator(
-                    label: 'TTS Engine',
-                    isActive: _systemStatus?.ttsInitialized ?? false,
-                    message: _systemStatus?.device ?? 'Unknown',
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: StatusIndicator(
-                    label: 'OBS Link',
-                    isActive: _systemStatus?.obsConnected ?? false,
-                    message: _systemStatus?.obsConnected == true
-                        ? 'Connected (Port ${_systemStatus!.obsPort})'
-                        : 'Disconnected',
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // System Control (collapsed by default)
-            ExpansionTile(
-              title: const Text('System Control (Advanced)'),
-              leading: const Icon(Icons.settings_system_daydream),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _launchUnity,
-                          icon: Icon(
-                            Icons.videogame_asset,
-                            color: (_systemStatus?.unityRunning ?? false)
-                                ? Colors.green
-                                : Colors.purple,
-                          ),
-                          label: Text(
-                            (_systemStatus?.unityRunning ?? false)
-                                ? 'Unity Running'
-                                : 'Launch Unity',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: (_systemStatus?.obsConnected ?? false)
-                              ? null
-                              : _launchObs,
-                          icon: Icon(
-                            Icons.camera,
-                            color: (_systemStatus?.obsConnected ?? false)
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                          label: Text(
-                            (_systemStatus?.obsConnected ?? false)
-                                ? 'OBS Running'
-                                : 'Launch OBS',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Lip Sync Settings
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Lip Sync Settings',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Switch(
-                          value: _lipSyncEnabled,
-                          activeColor: Colors.deepPurple,
-                          onChanged: (val) {
-                            setState(() {
-                              _lipSyncEnabled = val;
-                            });
-                            _updateLipSyncSettings();
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Text('Sensitivity: '),
-                        Text(
-                          _lipSyncSensitivity.toStringAsFixed(1),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: _lipSyncSensitivity,
-                      min: 1.0,
-                      max: 50.0,
-                      divisions: 49,
-                      label: _lipSyncSensitivity.round().toString(),
-                      activeColor: Colors.deepPurple,
-                      onChanged: _lipSyncEnabled
-                          ? (val) {
-                              setState(() {
-                                _lipSyncSensitivity = val;
-                              });
-                              _updateLipSyncSettings();
-                            }
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            if (_systemStatus != null && !_systemStatus!.obsConnected) ...[
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _connectObs,
-                icon: const Icon(Icons.link),
-                label: const Text('Connect to OBS WebSocket (Manual)'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.grey,
-                  side: const BorderSide(color: Colors.grey),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // Video Preview Section
-            VideoPreviewWidget(
-              baseUrl: 'http://127.0.0.1:8000/api/stream/preview',
-              isOBSConnected: _systemStatus?.obsConnected ?? false,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Livestream Images Section
-            SizedBox(
-              height: 400,
-              child: ImageUploadSection(
-                backendService: widget.backendService,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Voice Profile Info
-            if (_systemStatus != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Voice Profiles: ${_systemStatus!.voiceProfiles.isEmpty ? "None (using default)" : _systemStatus!.voiceProfiles.join(", ")}',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Text Input
-            const Text(
-              'Enter text to speak:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-
-            TextField(
-              controller: _textController,
-              maxLines: 5,
-              decoration: InputDecoration(
-                hintText: 'Hello, welcome to our livestream!',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Speak Button
-            ElevatedButton.icon(
-              onPressed: _isGenerating || !widget.backendService.isRunning
-                  ? null
-                  : _onSpeak,
-              icon: _isGenerating
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.mic),
-              label: Text(
-                _isGenerating ? 'Generating...' : 'Speak',
-                style: const TextStyle(fontSize: 18),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Status Message
-            if (_statusMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _lastResponse?.isSuccess ?? false
-                      ? Colors.green[50]
-                      : Colors.orange[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _lastResponse?.isSuccess ?? false
-                        ? Colors.green
-                        : Colors.orange,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _lastResponse?.isSuccess ?? false
-                              ? Icons.check_circle
-                              : Icons.info,
-                          color: _lastResponse?.isSuccess ?? false
-                              ? Colors.green
-                              : Colors.orange,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _statusMessage!,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_lastResponse != null &&
-                        _lastResponse!.generationTimeMs != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Generation time: ${_lastResponse!.generationTimeMs}ms',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-
-            const Spacer(),
-
-            // Instructions
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Instructions:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildInstruction(
-                    '1. Ensure backend is running (green status)',
-                  ),
-                  _buildInstruction('2. Type your text in the input field'),
-                  _buildInstruction('3. Click "Speak" to generate audio'),
-                  _buildInstruction(
-                    '4. OBS WebSocket enabled (Port ${_systemStatus?.obsPort ?? 4455})',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInstruction(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
+      backgroundColor: Colors.black, // Cinematic
+      body: Row(
         children: [
-          Icon(Icons.arrow_right, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 4),
+          // Left: Controls
+          Container(
+            width: 300,
+            color: Colors.grey[900],
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Live Idol Streamer",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+
+                // Scene Gen
+                TextField(
+                  controller: _promptController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: "Scene Description",
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _isGenerating ? null : _generateScene,
+                  icon: const Icon(Icons.image),
+                  label: const Text("Generate Scene"),
+                ),
+
+                const Divider(color: Colors.grey),
+
+                // Comment Sim
+                TextField(
+                  controller: _commentController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: "Simulate Comment",
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _isGenerating ? null : _processComment,
+                  icon: const Icon(Icons.send),
+                  label: const Text("Send Comment"),
+                ),
+
+                const Spacer(),
+                Text(_statusMessage,
+                    style: TextStyle(
+                        color: _statusMessage.contains("Error")
+                            ? Colors.red
+                            : Colors.green)),
+              ],
+            ),
+          ),
+
+          // Right: Video Area
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            child: Stack(
+              children: [
+                // Video Player
+                Center(
+                  child: _isVideoInitialized && _videoController != null
+                      ? AspectRatio(
+                          aspectRatio: _videoController!.value.aspectRatio,
+                          child: VideoPlayer(_videoController!),
+                        )
+                      : const Text("Waiting for Stream...",
+                          style: TextStyle(color: Colors.white)),
+                ),
+
+                // Comment Overlay (Bottom Left of Video)
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Viewer: Hello!",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                        // Dynamic list would go here
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -561,7 +262,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _textController.dispose();
+    _videoController?.dispose();
+    _promptController.dispose();
+    _commentController.dispose();
     super.dispose();
   }
 }

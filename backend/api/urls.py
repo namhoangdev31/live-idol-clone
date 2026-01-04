@@ -3,7 +3,7 @@ URL routing for API endpoints.
 """
 from django.urls import path
 from . import views
-from . import obs_stream
+
 
 urlpatterns = [
     path('health', views.health_check, name='health'),
@@ -12,21 +12,22 @@ urlpatterns = [
     path('voice-profiles', views.list_voice_profiles, name='voice_profiles'),
     path('settings/lipsync', views.update_lipsync_settings, name='lipsync_settings'),
 
-    # Control endpoints
-    path('unity/launch', views.launch_unity, name='launch_unity'),
-    path('obs/launch', views.launch_obs, name='launch_obs'),
-    path('obs/connect', views.connect_obs, name='connect_obs'),
-
-    # Video streaming endpoints
-    path('stream/preview', obs_stream.stream_preview, name='stream_preview'),
-    path('stream/snapshot', obs_stream.get_preview_snapshot, name='stream_snapshot'),
+    # Control endpoints - CLEARED FOR AI VIDEO PIPELINE
+    
+    # Video streaming endpoints - CLEARED
+    
     # Image upload endpoints
     path('images/upload', views.upload_image, name='upload_image'),
     path('images/<str:category>', views.list_images, name='list_images'),
     path('images/<str:category>/<str:filename>', views.delete_image, name='delete_image'),
     path('images/<str:category>/<str:filename>/favorite', views.toggle_image_favorite, name='toggle_favorite'),
-    # OBS image integration
-    path('obs/set-background', views.set_obs_background, name='set_obs_background'),
-    path('obs/add-overlay', views.add_obs_overlay, name='add_obs_overlay'),
-    path('obs/recording-status', views.get_recording_status, name='recording_status'),
+    
+    # OBS image integration - CLEARED
+    
+    # Scene Generation
+    path('scene/generate', views.generate_scene, name='generate_scene'),
+    
+    # AI Video Generation
+    path('video/idle', views.generate_idle, name='generate_idle'),
+    path('process-comment', views.process_comment, name='process_comment'),
 ]

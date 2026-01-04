@@ -77,71 +77,12 @@ class WebSocketServer:
             self.clients.remove(websocket)
             logger.info(f"Client disconnected. Total clients: {len(self.clients)}")
 
-    def broadcast_audio(self, audio_data: bytes, sample_rate: int = 24000):
-        """
-        Broadcast audio data to all connected clients.
-        
-        Args:
-            audio_data: Raw PCM audio bytes (S16LE)
-            sample_rate: Sample rate of the audio (default: 24000)
-        """
+    async def broadcast_json(self, data: dict):
+        """Broadcast JSON data to all connected clients."""
         if not self.clients:
             return
 
-        if self.loop is None or not self.running:
-            logger.warning("WebSocket server is not running, cannot broadcast audio")
-            return
-
-        # Encode header info if needed, or just send raw binary with a prefix 
-        # But for Unity default usage, sending a JSON message with B64 encoded audio
-        # is safer than raw binary mixing control messages.
-        # Alternatively, we can use binary frame for audio and text frame for control.
-        # Let's use strict Binary frame for audio to minimize overhead.
-        
-        # However, Unity needs to know it's audio.
-        # Let's stick to a simple protocol: 
-        # Binary messages are PCM audio samples (S16LE, 1 channel).
-        
-        message = audio_data
-
-        async def _broadcast():
-            # Create a list copy to avoid modification during iteration
-            for client in list(self.clients):
-                try:
-                    await client.send(message)
-                except websockets.exceptions.ConnectionClosed:
-                    self.clients.discard(client)
-                except Exception as e:
-                    logger.error(f"Error sending to client: {e}")
-
-        asyncio.run_coroutine_threadsafe(_broadcast(), self.loop)
-
-    def broadcast_viseme(self, viseme_data: dict):
-        """Broadcast viseme/control data as JSON."""
-        if not self.clients:
-            return
-            
-        message = json.dumps(viseme_data)
-        
-        async def _broadcast():
-            for client in list(self.clients):
-                try:
-                    await client.send(message)
-                except:
-                    pass
-        
-        asyncio.run_coroutine_threadsafe(_broadcast(), self.loop)
-
-    def broadcast_config(self, config_data: dict):
-        """Broadcast configuration/settings to all connected clients."""
-        if not self.clients:
-            return
-
-        # Ensure type is set
-        if 'type' not in config_data:
-            config_data['type'] = 'config'
-
-        message = json.dumps(config_data)
+        message = json.dumps(data)
 
         async def _broadcast():
             for client in list(self.clients):
@@ -150,7 +91,10 @@ class WebSocketServer:
                 except websockets.exceptions.ConnectionClosed:
                     self.clients.discard(client)
                 except Exception as e:
-                    logger.error(f"Error broadcasting config: {e}")
+                    logger.error(f"Error broadcasting JSON: {e}")
 
         if self.loop and self.running:
            asyncio.run_coroutine_threadsafe(_broadcast(), self.loop)
+
+    # Legacy methods removed (broadcast_audio, broadcast_viseme)
+

@@ -122,75 +122,41 @@ class ApiClient {
     }
   }
 
-  /// Attempt to connect to OBS
-  Future<bool> connectObs() async {
-    try {
-      final response = await _client
-          .post(Uri.parse('$baseUrl/obs/connect'))
-          .timeout(const Duration(seconds: 5));
+  // =========================================================================
+  // AI Video Generation Methods
+  // =========================================================================
 
-      if (response.statusCode == 200) {
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
-    }
+  /// Generate a scene (background/character) from text
+  Future<Map<String, dynamic>> generateScene(String prompt,
+      {String? negativePrompt}) async {
+    return post('/scene/generate', {
+      'prompt': prompt,
+      if (negativePrompt != null) 'negative_prompt': negativePrompt,
+    });
   }
 
-  /// Launch Unity Renderer
-  Future<Map<String, dynamic>> launchUnity() async {
-    try {
-      final response = await _client
-          .post(Uri.parse('$baseUrl/unity/launch'))
-          .timeout(const Duration(seconds: 10));
-
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'status': 'failed', 'error': 'Connection error: $e'};
-    }
+  /// Generate an idle looping video
+  Future<Map<String, dynamic>> generateIdle(String imagePath) async {
+    return post('/video/idle', {
+      'image_path': imagePath,
+    });
   }
 
-  /// Launch OBS Studio
-  Future<Map<String, dynamic>> launchObs() async {
-    try {
-      final response = await _client
-          .post(Uri.parse('$baseUrl/obs/launch'))
-          .timeout(const Duration(seconds: 10));
-
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'status': 'failed', 'error': 'Connection error: $e'};
-    }
-  }
-
-  /// Update Lip Sync Settings
-  Future<bool> updateLipSyncSettings({
-    bool enabled = true,
-    double sensitivity = 10.0,
+  /// Process a comment -> TTS -> Video
+  Future<Map<String, dynamic>> processComment({
+    required String comment,
+    required String viewer,
+    required String imagePath,
   }) async {
-    try {
-      final response = await _client
-          .post(
-            Uri.parse('$baseUrl/settings/lipsync'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'enabled': enabled,
-              'sensitivity': sensitivity,
-            }),
-          )
-          .timeout(const Duration(seconds: 5));
-
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Update Lip Sync Settings error: $e');
-      return false;
-    }
+    return post('/process-comment', {
+      'comment': comment,
+      'viewer': viewer,
+      'image_path': imagePath,
+    });
   }
 
   // =========================================================================
-  // Image Upload & Management Methods
+  // Image Management Methods
   // =========================================================================
 
   /// Upload an image file
@@ -246,61 +212,6 @@ class ApiClient {
       return response.statusCode == 200;
     } catch (e) {
       throw Exception('Delete error: $e');
-    }
-  }
-
-  /// Set OBS background image
-  Future<bool> setOBSBackground(String category, String filename) async {
-    try {
-      final response = await _client
-          .post(
-            Uri.parse('$baseUrl/obs/set-background'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'category': category,
-              'filename': filename,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      return response.statusCode == 200;
-    } catch (e) {
-      throw Exception('Set background error: $e');
-    }
-  }
-
-  /// Add OBS overlay image
-  Future<String?> addOBSOverlay({
-    required String category,
-    required String filename,
-    int x = 0,
-    int y = 0,
-    int width = 400,
-    int height = 400,
-  }) async {
-    try {
-      final response = await _client
-          .post(
-            Uri.parse('$baseUrl/obs/add-overlay'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'category': category,
-              'filename': filename,
-              'x': x,
-              'y': y,
-              'width': width,
-              'height': height,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return json['source_name'];
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Add overlay error: $e');
     }
   }
 

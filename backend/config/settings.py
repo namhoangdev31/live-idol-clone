@@ -116,7 +116,21 @@ if getattr(sys, 'frozen', False):
 else:
     TTS_MODEL = 'tts_models/multilingual/multi-dataset/xtts_v2'
 
-TTS_DEVICE = 'cpu'  # Change to 'cuda' if GPU available
+import torch
+
+# Dynamic Device Selection (CUDA vs MPS vs CPU)
+if torch.cuda.is_available():
+    TTS_DEVICE = 'cuda'
+    VIDEO_DEVICE = 'cuda'
+    print("🚀 Using Device: CUDA (NVIDIA)")
+elif torch.backends.mps.is_available():
+    TTS_DEVICE = 'mps'
+    VIDEO_DEVICE = 'mps'
+    print("🍎 Using Device: MPS (Apple Silicon)")
+else:
+    TTS_DEVICE = 'cpu'
+    VIDEO_DEVICE = 'cpu'
+    print("🐌 Using Device: CPU")
 
 # Ensure directories exist
 os.makedirs(VOICE_PROFILES_DIR, exist_ok=True)

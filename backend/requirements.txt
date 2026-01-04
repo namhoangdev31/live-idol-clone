@@ -9,10 +9,19 @@ pydub==0.25.1
 numpy
 scipy
 transformers==4.36.2
-pyaudio==0.2.14
+# pyaudio==0.2.14  # Removed for Docker/Server compatibility
 obs-websocket-py==1.0
 packaging==23.1
+diffusers>=0.25.0
+accelerate>=0.26.0
+transformers>=4.36.2
+insightface>=0.7.3
+onnxruntime>=1.16.0
+opencv-python-headless>=4.8.0
+scipy>=1.11.0
+imageio>=2.33.0
+lmdb>=1.4.1
+tqdm>=4.66.0
 setuptools==69.5.1
-pyinstaller==6.11.1
-websockets>=13.0
+# pyinstaller==6.11.1 # Removed for Dockerwebsockets>=13.0
 Pillow>=10.0.0

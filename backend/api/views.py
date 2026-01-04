@@ -41,20 +41,14 @@ def system_status(request):
     """
     tts_engine = TTSEngine.get_instance()
     
-    from .obs_control import OBSController
-    obs_controller = OBSController()
-    
-    from .unity_control import UnityController
-    unity_controller = UnityController()
-    
     return Response({
         'tts_initialized': tts_engine.initialized,
         'device': tts_engine.device,
         'voice_profiles': tts_engine.get_available_profiles(),
         'output_directory': str(tts_engine.output_dir),
-        'obs_connected': obs_controller.connected,
-        'obs_port': obs_controller.port,
-        'unity_running': unity_controller.is_running(),
+        'obs_connected': False, # Deprecated
+        'obs_port': 0,          # Deprecated
+        'unity_running': False, # Deprecated
     })
 
 
@@ -71,45 +65,12 @@ def speak(request):
     # Wait, I can just target system_status block and append launch_unity at end of file.
     pass 
 
-@api_view(['POST'])
-def connect_obs(request):
-    """Attempt to connect to OBS WebSocket."""
-    from .obs_control import OBSController
-    obs_controller = OBSController()
-    
-    success = obs_controller.connect()
-    
-    if success:
-        return Response({'status': 'connected'})
-    else:
-        return Response(
-            {'status': 'failed', 'error': 'Could not connect to OBS. Check if OBS is running and WebSocket is enabled (Port 4455).'},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+# Connect OBS removed
 
 
-@api_view(['POST'])
-def launch_unity(request):
-    """
-    Launch the Unity VRM Renderer process.
-    
-    POST /api/unity/launch
-    """
-    from .unity_control import UnityController
-    unity_controller = UnityController()
-    
-    if unity_controller.is_running():
-        return Response({'status': 'already_running', 'message': 'Unity Renderer is already running'})
-    
-    success = unity_controller.launch()
-    
-    if success:
-        return Response({'status': 'launched', 'message': 'Unity Renderer launched successfully'})
-    else:
-        return Response(
-            {'status': 'failed', 'error': 'Could not launch Unity Renderer. Check logs for details.'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+
+# Unity Launch removed
+
 
 
 @api_view(['POST'])
@@ -208,46 +169,8 @@ def list_voice_profiles(request):
     })
 
 
-@api_view(['POST'])
-def connect_obs(request):
-    """
-    Attempt to connect to OBS WebSocket.
-    
-    POST /api/obs/connect
-    """
-    from .obs_control import OBSController
-    obs_controller = OBSController()
-    
-    success = obs_controller.connect()
-    
-    if success:
-        return Response({'status': 'connected'})
-    else:
-        return Response(
-            {'status': 'failed', 'error': 'Could not connect to OBS. Check if OBS is running and WebSocket is enabled (Port 4455).'},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
-@api_view(['POST'])
-def launch_obs(request):
-    """
-    Launch the OBS Studio Portable process.
-    
-    POST /api/obs/launch
-    """
-    from .obs_control import OBSController
-    obs_controller = OBSController()
-    
-    # Check if already running (via process list, handled in launch)
-    
-    success = obs_controller.launch()
-    
-    if success:
-        return Response({'status': 'launched', 'message': 'OBS Studio launched successfully'})
-    else:
-        return Response(
-            {'status': 'failed', 'error': 'Could not launch OBS Studio. Check logs for details.'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+# OBS Logic Removed
+
 
 
 # ============================================================================
@@ -330,146 +253,8 @@ def delete_image(request, category, filename):
         )
 
 
-@api_view(['POST'])
-def set_obs_background(request):
-    """
-    Set an image as OBS scene background.
-    
-    POST /api/obs/set-background
-    
-    Request body:
-        {
-            "category": "background",
-            "filename": "abc123.jpg"
-        }
-    """
-    from .image_manager import ImageManager
-    from .obs_control import OBSController
-    
-    category = request.data.get('category')
-    filename = request.data.get('filename')
-    
-    if not category or not filename:
-        return Response(
-            {'error': 'Missing category or filename'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    # Get image path
-    image_path = ImageManager.get_image_path(category, filename)
-    
-    if not image_path:
-        return Response(
-            {'error': 'Image not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    
-    # Set background in OBS
-    obs_controller = OBSController()
-    
-    if not obs_controller.ensure_connected():
-        return Response(
-            {'error': 'OBS not connected'},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
-    
-    try:
-        success = obs_controller.set_scene_background(str(image_path))
-        
-        if success:
-            return Response({
-                'success': True,
-                'message': 'Background set successfully',
-                'image': filename
-            })
-        else:
-            return Response(
-                {'error': 'Failed to set background in OBS'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    except Exception as e:
-        logger.error(f"Error setting OBS background: {e}")
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+# OBS Overlay logic removed
 
-
-@api_view(['POST'])
-def add_obs_overlay(request):
-    """
-    Add an image overlay to OBS scene.
-    
-    POST /api/obs/add-overlay
-    
-    Request body:
-        {
-            "category": "overlay",
-            "filename": "logo.png",
-            "x": 100,
-            "y": 100,
-            "width": 400,
-            "height": 400
-        }
-    """
-    from .image_manager import ImageManager
-    from .obs_control import OBSController
-    
-    category = request.data.get('category')
-    filename = request.data.get('filename')
-    x = request.data.get('x', 0)
-    y = request.data.get('y', 0)
-    width = request.data.get('width', 400)
-    height = request.data.get('height', 400)
-    
-    if not category or not filename:
-        return Response(
-            {'error': 'Missing category or filename'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    # Get image path
-    image_path = ImageManager.get_image_path(category, filename)
-    
-    if not image_path:
-        return Response(
-            {'error': 'Image not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    
-    # Add overlay to OBS
-    obs_controller = OBSController()
-    
-    if not obs_controller.ensure_connected():
-        return Response(
-            {'error': 'OBS not connected'},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
-    
-    try:
-        source_name = obs_controller.add_image_overlay(
-            str(image_path),
-            position=(x, y),
-            size=(width, height)
-        )
-        
-        if source_name:
-            return Response({
-                'success': True,
-                'message': 'Overlay added successfully',
-                'source_name': source_name
-            })
-        else:
-            return Response(
-                {'error': 'Failed to add overlay to OBS'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    except Exception as e:
-        logger.error(f"Error adding OBS overlay: {e}")
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
 
 @api_view(['GET'])
@@ -556,44 +341,143 @@ def toggle_image_favorite(request, category, filename):
 
 
 
+# LipSync settings removed
+
 @api_view(['POST'])
-def update_lipsync_settings(request):
+def generate_scene(request):
     """
-    Update Lip Sync settings and broadcast to Unity.
+    Generate a scene (background/character) from text description.
     
-    POST /api/settings/lipsync
+    POST /api/scene/generate
     
     Request body:
         {
-            "enabled": true,
-            "sensitivity": 20.0
+            "prompt": "A beautiful lounge with a city view night",
+            "negative_prompt": "ugly, blurry" (optional)
         }
     """
-    from .ws_server import WebSocketServer
+    prompt = request.data.get('prompt')
+    negative_prompt = request.data.get('negative_prompt')
     
-    enabled = request.data.get('enabled', True)
-    sensitivity = request.data.get('sensitivity', 10.0)
-    
+    if not prompt:
+        return Response(
+            {'error': 'Prompt is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+        
     try:
-        ws_server = WebSocketServer.get_instance()
+        from .scene_engine import SceneGenerator
+        generator = SceneGenerator.get_instance()
         
-        config_data = {
-            "type": "lipsync_config",
-            "enabled": enabled,
-            "sensitivity": sensitivity
-        }
+        # This might take time, so ideally run in background task (Celery/RQ)
+        # For MVP/PoC, synchronous is acceptable but will block this worker.
+        result = generator.generate_scene(prompt, negative_prompt)
         
-        ws_server.broadcast_config(config_data)
-        
-        return Response({
-            'status': 'success', 
-            'message': 'Lip Sync settings updated',
-            'config': config_data
-        })
+        if result['status'] == 'error':
+            return Response(
+                {'error': result['error']},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+        return Response(result)
         
     except Exception as e:
-        logger.error(f"Error updating Lip Sync settings: {e}")
+        logger.error(f"Error in generate_scene: {e}")
         return Response(
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['POST'])
+def generate_idle(request):
+    """
+    Generate an idle looping video for a character.
+    
+    POST /api/video/idle
+    
+    Request body:
+        {
+            "image_path": "/path/to/image.png"
+        }
+    """
+    image_path = request.data.get('image_path')
+    
+    if not image_path:
+        return Response({'error': 'image_path is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        from .video_engine import VideoGenerationEngine
+        engine = VideoGenerationEngine.get_instance()
+        
+        video_path = engine.generate_idle_video(image_path)
+        
+        if not video_path:
+            return Response({'error': 'Failed to generate idle video'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        return Response({
+            'status': 'success',
+            'video_path': video_path,
+            'url': f"/static/output/{os.path.basename(video_path)}"
+        })
+    except Exception as e:
+        logger.error(f"Error generating idle video: {e}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def process_comment(request):
+    """
+    Process a comment: Generate Text Response -> TTS -> Video.
+    
+    POST /api/process-comment
+    
+    Request body:
+        {
+            "comment": "Hello idol!",
+            "viewer": "User123",
+            "image_path": "/path/to/character.png"
+        }
+    """
+    comment = request.data.get('comment')
+    viewer = request.data.get('viewer', 'Viewer')
+    image_path = request.data.get('image_path')
+    
+    if not comment or not image_path:
+        return Response({'error': 'comment and image_path are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        # 1. Generate Text Response
+        from .comment_processor import CommentProcessor
+        processor = CommentProcessor.get_instance()
+        reply_text = processor.generate_reply(comment, viewer)
+        
+        # 2. Generate Audio (TTS)
+        tts = TTSEngine.get_instance()
+        # TODO: Get voice profile from request or default
+        tts_result = tts.generate_speech(reply_text, voice_profile="default")
+        
+        if tts_result['status'] == 'error':
+            raise Exception(f"TTS Error: {tts_result.get('error')}")
+            
+        audio_path = tts_result['audio_path']
+        
+        # 3. Generate Video (Video Engine)
+        from .video_engine import VideoGenerationEngine
+        video_engine = VideoGenerationEngine.get_instance()
+        
+        video_path = video_engine.generate_talking_video(image_path, audio_path)
+        
+        return Response({
+            'status': 'success',
+            'reply_text': reply_text,
+            'audio_path': audio_path,
+            'video_path': video_path,
+            'video_url': f"/static/output/{os.path.basename(video_path)}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error processing comment: {e}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
