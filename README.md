@@ -573,7 +573,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ### Planned Features
 - 🔄 **Lip Sync**: Real-time lip synchronization with audio
 - 🔄 **Voice Cloning**: Custom voice profile training
-- 🔄 **Chat Integration**: Twitch/YouTube chat reading
+- 🔄 **Chat Integration**: TikTok/Shopee Live chat reading
 - 🔄 **Animation System**: Gesture and expression controls
 - 🔄 **Multi-Language**: Expanded language support
 - 🔄 **Cloud Deployment**: Optional cloud-based setup guide
