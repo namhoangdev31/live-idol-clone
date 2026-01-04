@@ -20,6 +20,17 @@ def main():
     # Initialize Django
     django.setup()
     
+    # Auto-apply migrations to fix warnings/errors
+    try:
+        from django.core.management import call_command
+        # Optional: makemigrations usually not needed in prod/runtime unless models changed dynamically, 
+        # but safe to include for "api" app if we had models.
+        # call_command('makemigrations', 'api') 
+        print("Applying database migrations...")
+        call_command('migrate')
+    except Exception as e:
+        print(f"Warning: Migration failed: {e}")
+    
     # Run server on port 8000
     sys.argv = ['manage.py', 'runserver', '127.0.0.1:8000', '--noreload']
     
