@@ -112,17 +112,17 @@ public class VRMLoader : MonoBehaviour
     
     void SetupComponents(GameObject target)
     {
-        // Add LipSync if missing
-        if (!target.GetComponent<LipSync>())
-            target.AddComponent<LipSync>();
+        // Add LipSync Processor (NEW)
+        if (!target.GetComponent<LipSyncProcessor>())
+            target.AddComponent<LipSyncProcessor>();
             
         // Add IdleAnimation if missing
         if (!target.GetComponent<IdleAnimation>())
             target.AddComponent<IdleAnimation>();
             
-        // Add AudioReceiver if missing
-        if (!target.GetComponent<AudioReceiver>())
-            target.AddComponent<AudioReceiver>();
+        // Add WebSocket Audio Receiver (NEW)
+        if (!target.GetComponent<WSAudioReceiver>())
+            target.AddComponent<WSAudioReceiver>();
             
         // Add AudioSource for voice
         if (!target.GetComponent<AudioSource>())
